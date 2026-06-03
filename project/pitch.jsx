@@ -17,7 +17,7 @@ function Pitch(props){
   const {
     mode, setMode, peopleSquad, mySquad, coaches, communityCoach, myCoach, onVoteCoach,
     votesOf, myVotes, onVotePlayer, myLineup, onStart, onBuy, onPromote, onSell, ownedIds, budget,
-    contributors, contributed, onShare, sharedView, onClaimShared, goMercato,
+    contributors, contributed, apiReady, onShare, sharedView, onClaimShared, goMercato,
   } = props;
 
   const isMine = mode === "mine";
@@ -157,7 +157,7 @@ function Pitch(props){
           <span className="pulse"/>
           <div>
             <div className="big">{fmtNum(contributors)}</div>
-            <div className="sub">Rossoneri picking the team</div>
+            <div className="sub">Rossoneri picking the team{apiReady ? " · live" : ""}</div>
           </div>
           <div className="you">{contributed ? "You're in ✓" : "Vote to join"}</div>
         </div>

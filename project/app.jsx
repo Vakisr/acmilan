@@ -20,6 +20,19 @@ function readShared(){
   } catch(e){ return null; }
 }
 
+/* Persistent session ID for vote deduplication on the backend */
+function getSessionId(){
+  let id = localStorage.getItem("milan-session-id");
+  if (!id){
+    id = crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("milan-session-id", id);
+  }
+  return id;
+}
+const SESSION_ID = getSessionId();
+
 /* original rossoneri devil crest */
 function Crest(){
   return (
@@ -27,15 +40,11 @@ function Crest(){
       <path d="M4 4 H44 V28 C44 41 35 48 24 51 C13 48 4 41 4 28 Z" fill="#0B0B0E" stroke="#fff" strokeWidth="1.6"/>
       <path d="M24 4 H44 V28 C44 41 35 48 24 51 Z" fill="#E2001A"/>
       <path d="M24 4 V51" stroke="#fff" strokeWidth="1" opacity=".5"/>
-      {/* horns */}
       <path d="M17.5 19 L11.5 8 Q14 12 18.5 15 Z" fill="#fff"/>
       <path d="M30.5 19 L36.5 8 Q34 12 29.5 15 Z" fill="#fff"/>
-      {/* devil head */}
       <path d="M16 21 C16 15 20 12.5 24 12.5 C28 12.5 32 15 32 21 C32 30 28 36 24 40 C20 36 16 30 16 21 Z" fill="#fff"/>
-      {/* angry eyes */}
       <path d="M19.6 23.4 L23 25 L20 26.6 Z" fill="#0B0B0E"/>
       <path d="M28.4 23.4 L25 25 L28 26.6 Z" fill="#0B0B0E"/>
-      {/* grin */}
       <path d="M20.5 30 Q24 33 27.5 30" stroke="#0B0B0E" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
     </svg>
   );
@@ -50,7 +59,7 @@ function App(){
   const [mode, setMode] = uS(shared ? "mine" : (saved.mode || "people"));
   const [sharedView, setSharedView] = uS(!!shared);
   const [ownedIds, setOwnedIds] = uS(init.ownedIds || init.o || SQUAD_IDS.slice());
-  const [budget, setBudget] = uS((init.budget != null ? init.budget : (init.b != null ? init.b : M.START_BUDGET)));
+  const [budget, setBudget] = uS(init.budget != null ? init.budget : (init.b != null ? init.b : M.START_BUDGET));
   const [seeds, setSeeds] = uS(init.seeds || init.s || {});
   const [myLineup, setMyLineup] = uS(init.myLineup || init.l || {});
   const [myCoach, setMyCoach] = uS(init.myCoach || init.c || (saved.myCoach || null));
@@ -58,6 +67,22 @@ function App(){
   const [contributed, setContributed] = uS(!!saved.contributed);
   const [toast, setToast] = uS(null);
   const toastT = React.useRef(null);
+
+  /* Live backend state — seeds from data.js are the fallback when API is unreachable */
+  const [serverState, setServerState] = uS({
+    votes: {},
+    coaches: { slot: 9120, glasner: 11890 },
+    contributors: BASE_CONTRIB,
+  });
+  const [apiReady, setApiReady] = uS(false);
+
+  /* Fetch live tallies once on mount */
+  uE(() => {
+    fetch("/api/state")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data){ setServerState(data); setApiReady(true); } })
+      .catch(() => {});
+  }, []);
 
   uE(() => {
     localStorage.setItem(STORE, JSON.stringify({
@@ -69,15 +94,22 @@ function App(){
   const owned = uM(() => ownedIds.map(id => INDEX[id]).filter(Boolean), [ownedIds]);
   const squadValue = owned.reduce((s,p)=> s + p.value, 0);
 
+  /* votesOf: server tally is source of truth; seeds (buy hype) override; +1 optimistic for own vote */
   const votesOf = uC((p) => {
-    const base = seeds[p.id] != null ? seeds[p.id] : p.votes;
+    const server = serverState.votes[p.id];
+    const base = seeds[p.id] != null ? seeds[p.id] : (server != null ? server : p.votes);
     return base + (myVotes.has(p.id) ? VOTE_WEIGHT : 0);
-  }, [seeds, myVotes]);
+  }, [seeds, myVotes, serverState]);
 
-  const coaches = M.COACHES.map(c => ({ ...c, liveVotes: c.votes + (myCoach === c.id ? VOTE_WEIGHT : 0) }));
+  const coaches = M.COACHES.map(c => ({
+    ...c,
+    liveVotes: (serverState.coaches[c.id] ?? c.votes) + (myCoach === c.id ? VOTE_WEIGHT : 0),
+  }));
   const sortedCoach = [...coaches].sort((a,b)=> b.liveVotes - a.liveVotes);
   const communityCoach = sortedCoach[0].id;
-  const contributors = BASE_CONTRIB + (contributed ? 1 : 0);
+
+  /* Use server contributor count when live; fall back to local increment */
+  const contributors = apiReady ? serverState.contributors : BASE_CONTRIB + (contributed ? 1 : 0);
 
   const flash = (msg, bad) => {
     setToast({ msg, bad });
@@ -86,32 +118,54 @@ function App(){
   };
   const markContributed = () => { if (!contributed) setContributed(true); };
 
-  // Wage-cap impact of adding player p: returns a toast suffix + whether it breaches.
   const wageFlash = (p) => {
     const current = owned.reduce((s, q) => s + wageOf(q), 0);
     const after = current + wageOf(p);
     const cap = M.WAGE_CAP;
-    if (after > cap) {
+    if (after > cap){
       const over = Math.round((after - cap) * 10) / 10;
       return { msg: " · ⚠ wage bill €" + over + "M over cap", bad: true };
     }
     return { msg: " · €" + wageOf(p) + "M/yr wages", bad: false };
   };
 
+  /* Fire-and-forget vote to backend; on success patch serverState optimistically */
+  function postVote(type, id){
+    fetch("/api/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, id, sessionId: SESSION_ID }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || !data.ok) return;
+        setServerState(prev => {
+          const key = type === "coach" ? "coaches" : "votes";
+          return { ...prev, [key]: { ...prev[key], [id]: data.votes }, contributors: prev.contributors + 1 };
+        });
+        setApiReady(true);
+      })
+      .catch(() => {});
+  }
+
   // ---- handlers ----
   const onVotePlayer = (id) => {
     setMyVotes(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
     markContributed();
+    postVote("player", id);
   };
+
   const onVoteCoach = (id) => {
-    setMyCoach(prev => prev === id ? id : id); // picking always sets (also drives My XI shape)
+    setMyCoach(() => id);
     markContributed();
     flash("Lined up in " + M.FORMATIONS[id].name);
+    postVote("coach", id);
   };
+
   const onBuy = (p) => {
-    if (p.value > budget) { flash("Not enough in the war chest", true); return false; }
+    if (p.value > budget){ flash("Not enough in the war chest", true); return false; }
     if (ownedIds.includes(p.id)) return false;
-    if (ownedIds.length >= 30) { flash("Squad is full (30 max)", true); return false; }
+    if (ownedIds.length >= 30){ flash("Squad is full (30 max)", true); return false; }
     setBudget(b => b - p.value);
     setSeeds(s => ({ ...s, [p.id]: buyHype(p) }));
     setOwnedIds(ids => [...ids, p.id]);
@@ -122,7 +176,7 @@ function App(){
   };
   const onPromote = (p) => {
     if (ownedIds.includes(p.id)) return false;
-    if (ownedIds.length >= 30) { flash("Squad is full (30 max)", true); return false; }
+    if (ownedIds.length >= 30){ flash("Squad is full (30 max)", true); return false; }
     setSeeds(s => ({ ...s, [p.id]: buyHype(p) }));
     setOwnedIds(ids => [...ids, p.id]);
     flash(p.short + " promoted from the academy");
@@ -132,9 +186,9 @@ function App(){
   const onSell = (p) => {
     setBudget(b => b + p.value);
     setOwnedIds(ids => ids.filter(id => id !== p.id));
-    // clean lineup overrides referencing this player
     setMyLineup(ml => {
-      const n = {}; for (const c in ml){ n[c] = {}; for (const s in ml[c]) if (ml[c][s] !== p.id) n[c][s] = ml[c][s]; }
+      const n = {};
+      for (const c in ml){ n[c] = {}; for (const s in ml[c]) if (ml[c][s] !== p.id) n[c][s] = ml[c][s]; }
       return n;
     });
     flash(p.short + " sold · +" + fmtMoney(p.value === 0 ? 0 : p.value));
@@ -153,12 +207,10 @@ function App(){
     const done = () => flash("Link copied — share your XI!");
     if (navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(url).then(done).catch(()=>{
-        try { const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); done(); }
-        catch(e2){ flash("Shareable link is in your address bar"); }
+        try { const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); done(); } catch(e2){ flash("Shareable link is in your address bar"); }
       });
     } else {
-      try { const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); done(); }
-      catch(e2){ flash("Shareable link is in your address bar"); }
+      try { const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); done(); } catch(e2){ flash("Shareable link is in your address bar"); }
     }
   };
   const onClaimShared = () => {
@@ -199,7 +251,7 @@ function App(){
           votesOf={votesOf} myVotes={myVotes} onVotePlayer={onVotePlayer}
           myLineup={myLineup} onStart={onStart}
           onBuy={onBuy} onPromote={onPromote} onSell={onSell} ownedIds={ownedIds} budget={budget}
-          contributors={contributors} contributed={contributed}
+          contributors={contributors} contributed={contributed} apiReady={apiReady}
           onShare={onShare} sharedView={sharedView} onClaimShared={onClaimShared}
           goMercato={()=>setTab("mercato")}
         />
