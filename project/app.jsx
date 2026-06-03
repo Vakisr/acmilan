@@ -20,6 +20,7 @@ function readShared(){
   } catch(e){ return null; }
 }
 
+/* Persistent session ID for vote deduplication on the backend */
 function getSessionId(){
   let id = localStorage.getItem("milan-session-id");
   if (!id){
@@ -32,6 +33,7 @@ function getSessionId(){
 }
 const SESSION_ID = getSessionId();
 
+/* original rossoneri devil crest */
 function Crest(){
   return (
     <svg className="crest" viewBox="0 0 48 52" aria-hidden="true">
@@ -66,6 +68,7 @@ function App(){
   const [toast, setToast] = uS(null);
   const toastT = React.useRef(null);
 
+  /* Live backend state — seeds from data.js are the fallback when API is unreachable */
   const [serverState, setServerState] = uS({
     votes: {},
     coaches: { slot: 9120, glasner: 11890 },
@@ -73,6 +76,7 @@ function App(){
   });
   const [apiReady, setApiReady] = uS(false);
 
+  /* Fetch live tallies once on mount */
   uE(() => {
     fetch("/api/state")
       .then(r => r.ok ? r.json() : null)
@@ -90,6 +94,7 @@ function App(){
   const owned = uM(() => ownedIds.map(id => INDEX[id]).filter(Boolean), [ownedIds]);
   const squadValue = owned.reduce((s,p)=> s + p.value, 0);
 
+  /* votesOf: server tally is source of truth; seeds (buy hype) override; +1 optimistic for own vote */
   const votesOf = uC((p) => {
     const server = serverState.votes[p.id];
     const base = seeds[p.id] != null ? seeds[p.id] : (server != null ? server : p.votes);
@@ -102,6 +107,8 @@ function App(){
   }));
   const sortedCoach = [...coaches].sort((a,b)=> b.liveVotes - a.liveVotes);
   const communityCoach = sortedCoach[0].id;
+
+  /* Use server contributor count when live; fall back to local increment */
   const contributors = apiReady ? serverState.contributors : BASE_CONTRIB + (contributed ? 1 : 0);
 
   const flash = (msg, bad) => {
@@ -122,6 +129,7 @@ function App(){
     return { msg: " · €" + wageOf(p) + "M/yr wages", bad: false };
   };
 
+  /* Fire-and-forget vote to backend; on success patch serverState optimistically */
   function postVote(type, id){
     fetch("/api/vote", {
       method: "POST",
@@ -140,6 +148,7 @@ function App(){
       .catch(() => {});
   }
 
+  // ---- handlers ----
   const onVotePlayer = (id) => {
     setMyVotes(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
     markContributed();

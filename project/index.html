@@ -24,6 +24,7 @@
 <script src="world4.js"></script>
 <script src="world_gen.js"></script>
 <script>
+/* dedupe the world pool by name — curated (earlier) entries win over generated */
 (function(){
   var M=window.MILAN, seen=Object.create(null), out=[];
   for (var i=0;i<M.WORLD.length;i++){
