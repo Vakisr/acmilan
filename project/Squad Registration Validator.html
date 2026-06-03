@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>Squad Registration Validator · AC Milan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --rosso:#E2001A; --rosso-bright:#FF1E36; --nero:#0B0B0E; --nero-2:#15151A; --nero-3:#1E1E25;
+    --linea:#2A2A33; --bianco:#fff; --fumo:#B9B6C0; --fumo-2:#6E6B78; --verde:#1F9E5A; --oro:#D9B450;
+    --ff-display:"Anton",sans-serif; --ff-cond:"Oswald",sans-serif; --ff-body:"Archivo",system-ui,sans-serif; --ff-mono:"JetBrains Mono",monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:#000;color:var(--bianco);font-family:var(--ff-body);}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 0 60px;}
+  @media(min-width:900px){ body{background:radial-gradient(circle at 50% -8%,#1a0306,#000 55%);} }
+
+  header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:13px;padding:14px 18px;
+    background:linear-gradient(180deg,#000,var(--nero));border-bottom:1px solid var(--linea);}
+  .crest{width:36px;height:36px;flex:none;}
+  .htxt{min-width:0;}
+  .htxt b{font-family:var(--ff-display);font-size:16px;letter-spacing:.4px;text-transform:uppercase;display:block;line-height:1.04;}
+  .htxt span{font-family:var(--ff-cond);font-weight:600;font-size:9.5px;letter-spacing:2.4px;color:var(--rosso-bright);text-transform:uppercase;display:block;margin-top:4px;}
+  .variant{margin-left:auto;display:flex;gap:6px;}
+  .variant button{font-family:var(--ff-cond);font-weight:600;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;
+    padding:7px 11px;border-radius:9px;border:1px solid var(--linea);background:var(--nero-2);color:var(--fumo);cursor:pointer;}
+  .variant button.on{background:var(--rosso);border-color:var(--rosso);color:#fff;}
+
+  .kicker{font-family:var(--ff-cond);font-weight:600;font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:var(--rosso-bright);}
+  h2.sec{font-family:var(--ff-display);font-size:24px;text-transform:uppercase;letter-spacing:.4px;margin:6px 0 0;}
+  section{padding:22px 18px 6px;}
+
+  /* test suite */
+  .suite-head{display:flex;align-items:baseline;gap:12px;margin-bottom:12px;}
+  .pill{font-family:var(--ff-display);font-size:14px;padding:3px 11px;border-radius:20px;letter-spacing:.5px;}
+  .pill.pass{background:#0c2418;color:#5fe39c;border:1px solid #18432c;}
+  .pill.fail{background:#2a0c0c;color:#ff7a6b;border:1px solid #5a1a16;}
+  .test{display:flex;gap:11px;padding:10px 12px;border-radius:10px;background:var(--nero-2);border:1px solid var(--linea);margin-bottom:7px;}
+  .test .dot{width:9px;height:9px;border-radius:50%;flex:none;margin-top:5px;}
+  .test.ok .dot{background:var(--verde);} .test.no .dot{background:var(--rosso-bright);}
+  .test .tn{font-family:var(--ff-cond);font-weight:600;font-size:13.5px;letter-spacing:.3px;line-height:1.2;}
+  .test .td{font-family:var(--ff-mono);font-size:11px;color:var(--fumo-2);margin-top:4px;white-space:pre-wrap;}
+  .test.no .td{color:#ff9a8d;}
+  .grp{font-family:var(--ff-cond);font-weight:600;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--fumo-2);margin:16px 0 8px;display:flex;align-items:center;gap:8px;}
+  .grp::after{content:"";flex:1;height:1px;background:var(--linea);}
+
+  /* inspector */
+  .inspector{display:grid;grid-template-columns:1fr;gap:16px;}
+  @media(min-width:760px){ .inspector{grid-template-columns:300px 1fr;} }
+  .controls{background:var(--nero-2);border:1px solid var(--linea);border-radius:14px;padding:14px 15px;}
+  .ctrl{margin-bottom:13px;}
+  .ctrl:last-child{margin-bottom:0;}
+  .ctrl label{display:flex;justify-content:space-between;font-family:var(--ff-cond);font-weight:600;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--fumo);margin-bottom:5px;}
+  .ctrl label b{font-family:var(--ff-display);color:#fff;font-size:15px;}
+  .ctrl input[type=range]{width:100%;accent-color:var(--rosso);}
+  .ctrl .hint{font-size:10px;color:var(--fumo-2);margin-top:3px;font-family:var(--ff-mono);}
+  .toggle{display:flex;gap:7px;}
+  .toggle button{flex:1;font-family:var(--ff-cond);font-weight:600;font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;padding:7px;border-radius:8px;border:1px solid var(--linea);background:var(--nero-3);color:var(--fumo);cursor:pointer;}
+  .toggle button.on{background:var(--rosso);border-color:var(--rosso);color:#fff;}
+
+  .readout{background:var(--nero-2);border:1px solid var(--linea);border-radius:14px;padding:16px 16px 18px;}
+  .verdict{display:flex;align-items:center;gap:12px;padding-bottom:13px;border-bottom:1px solid var(--linea);margin-bottom:14px;}
+  .verdict .big{font-family:var(--ff-display);font-size:30px;text-transform:uppercase;letter-spacing:.5px;line-height:.9;}
+  .verdict.ok .big{color:#5fe39c;} .verdict.no .big{color:var(--rosso-bright);}
+  .verdict .sub{font-family:var(--ff-cond);font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--fumo-2);}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+  .stat{background:var(--nero-3);border:1px solid var(--linea);border-radius:11px;padding:11px 8px;text-align:center;}
+  .stat .n{font-family:var(--ff-display);font-size:26px;line-height:.9;}
+  .stat .l{font-family:var(--ff-cond);font-size:8.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--fumo-2);margin-top:4px;}
+  .stat.warn .n{color:var(--rosso-bright);} .stat.good .n{color:var(--verde);}
+  .slotbar{display:flex;height:30px;border-radius:8px;overflow:hidden;border:1px solid var(--linea);margin-bottom:6px;}
+  .slotbar div{display:flex;align-items:center;justify-content:center;font-family:var(--ff-cond);font-weight:600;font-size:10px;letter-spacing:.4px;color:#fff;white-space:nowrap;overflow:hidden;}
+  .seg-club{background:var(--rosso);} .seg-assoc{background:#8E0010;} .seg-free{background:var(--nero-3);color:var(--fumo);} .seg-forfeit{background:repeating-linear-gradient(45deg,#2a0c0c 0 6px,#1a0808 6px 12px);color:#ff7a6b;}
+  .slotleg{display:flex;flex-wrap:wrap;gap:10px;font-family:var(--ff-cond);font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--fumo-2);margin-bottom:14px;}
+  .slotleg i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle;}
+  .msg{font-family:var(--ff-mono);font-size:11.5px;line-height:1.5;padding:9px 11px;border-radius:9px;margin-bottom:7px;}
+  .msg.v{background:#2a0c0c;border:1px solid #5a1a16;color:#ff9a8d;}
+  .msg.w{background:#2a220a;border:1px solid #4a3c14;color:var(--oro);}
+  .msg .code{color:#fff;font-weight:600;}
+  .none{font-family:var(--ff-cond);font-size:11px;letter-spacing:.5px;color:var(--fumo-2);}
+  .preset{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;}
+  .preset button{font-family:var(--ff-cond);font-weight:600;font-size:10px;letter-spacing:.8px;text-transform:uppercase;padding:6px 10px;border-radius:8px;border:1px solid var(--linea);background:var(--nero-3);color:var(--fumo);cursor:pointer;}
+  .preset button:hover{border-color:var(--rosso);color:#fff;}
+  footer{padding:24px 18px;color:var(--fumo-2);font-family:var(--ff-mono);font-size:10.5px;line-height:1.6;}
+  code{font-family:var(--ff-mono);color:var(--oro);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg class="crest" viewBox="0 0 48 52" aria-hidden="true">
+      <path d="M4 4 H44 V28 C44 41 35 48 24 51 C13 48 4 41 4 28 Z" fill="#0B0B0E" stroke="#fff" stroke-width="1.6"/>
+      <path d="M24 4 H44 V28 C44 41 35 48 24 51 Z" fill="#E2001A"/>
+      <path d="M17.5 19 L11.5 8 Q14 12 18.5 15 Z" fill="#fff"/>
+      <path d="M30.5 19 L36.5 8 Q34 12 29.5 15 Z" fill="#fff"/>
+      <path d="M16 21 C16 15 20 12.5 24 12.5 C28 12.5 32 15 32 21 C32 30 28 36 24 40 C20 36 16 30 16 21 Z" fill="#fff"/>
+      <path d="M19.6 23.4 L23 25 L20 26.6 Z" fill="#0B0B0E"/><path d="M28.4 23.4 L25 25 L28 26.6 Z" fill="#0B0B0E"/>
+      <path d="M20.5 30 Q24 33 27.5 30" stroke="#0B0B0E" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="htxt">
+      <b>Squad Registration Validator</b>
+      <span id="variant-label">Serie A List · 2026-27</span>
+    </div>
+    <div class="variant" id="variant-toggle">
+      <button data-v="DOMESTIC_SERIE_A" class="on">Serie A</button>
+      <button data-v="UEFA_LIST_A">UEFA List A</button>
+    </div>
+  </header>
+
+  <section>
+    <div class="kicker">Interactive</div>
+    <h2 class="sec">Build a list, watch the rules</h2>
+    <div class="inspector" style="margin-top:14px;">
+      <div class="controls" id="controls"></div>
+      <div class="readout" id="readout"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="suite-head">
+      <div>
+        <div class="kicker">Engine</div>
+        <h2 class="sec">Unit test suite</h2>
+      </div>
+      <span class="pill" id="suite-pill" style="margin-left:auto;align-self:center;">…</span>
+    </div>
+    <div id="suite"></div>
+  </section>
+
+  <footer>
+    Canonical engine: <code>squad-rules/engine.ts</code> · types <code>squad-rules/types.ts</code> · vitest suite <code>squad-rules/engine.test.ts</code>.<br/>
+    This page runs the byte-for-byte logic mirror <code>squad-rules/engine.browser.js</code> (<code>window.SquadRules</code>). Run the canonical suite with <code>npx vitest run</code>.
+  </footer>
+</div>
+
+<script src="squad-rules/engine.browser.js"></script>
+<script>
+/* ---------- shared fixtures ---------- */
+var SR = window.SquadRules;
+var CLUB = "milan";
+function cfg(variant, overrides){
+  return SR.makeConfig({
+    variant: variant || "DOMESTIC_SERIE_A", season: "2026-27", clubId: CLUB, associationCountry: "IT",
+    clubAssociations: { milan:"IT", inter:"IT", atalanta:"IT", roma:"IT", anderlecht:"BE", chelsea:"EN" },
+    overrides: overrides || {}
+  });
+}
+var _n = 0;
+function P(o){ o = o || {}; _n++; return {
+  id:o.id||("p"+_n), name:o.name||("Player "+_n), dateOfBirth:o.dateOfBirth||"1996-01-01",
+  nationality:o.nationality||"IT", euEligible:o.euEligible!==undefined?o.euEligible:true,
+  developmentHistory:o.developmentHistory||[], currentClubId:o.currentClubId||CLUB,
+  registeredThisSeason:o.registeredThisSeason, forceListA:o.forceListA };
+}
+function trainedAt(clubId, startYear, loan){ startYear=startYear||2011;
+  return [0,1,2].map(function(i){ return { clubId:clubId, season:(startYear+i)+"-"+String(startYear+i+1).slice(2), onLoan:!!loan }; });
+}
+var clubTrained = function(){ return P({developmentHistory:trainedAt(CLUB), name:"ClubTrained"}); };
+var assocTrained = function(nat,eu){ return P({developmentHistory:trainedAt("inter"), nationality:nat||"IT", euEligible:eu!==undefined?eu:true, name:"AssocTrained"}); };
+var plain = function(o){ return P(Object.assign({name:"Plain"}, o||{})); };
+function fill(n, f){ var a=[]; for(var i=0;i<n;i++) a.push(f()); return a; }
+
+/* ---------- tiny test harness ---------- */
+function runSuite(){
+  var results=[], groups={};
+  function expectEq(a,b){ if(JSON.stringify(a)!==JSON.stringify(b)) throw new Error("expected "+JSON.stringify(b)+", got "+JSON.stringify(a)); }
+  function expectTrue(a){ if(a!==true) throw new Error("expected true, got "+JSON.stringify(a)); }
+  function expectFalse(a){ if(a!==false) throw new Error("expected false, got "+JSON.stringify(a)); }
+  function test(group,name,fn){
+    var r={group:group,name:name,ok:true,detail:""};
+    try{ fn(); }catch(e){ r.ok=false; r.detail=e.message; }
+    results.push(r); (groups[group]=groups[group]||[]).push(r);
+  }
+
+  // derived flags
+  test("Derived flags","club-trained implies association-trained",function(){
+    var f=SR.derivePlayerFlags(clubTrained(),cfg());
+    expectTrue(f.isClubTrained); expectTrue(f.isAssociationTrained); expectTrue(f.isLocallyTrained);
+  });
+  test("Derived flags","association-trained foreign national is homegrown (nationality decoupled)",function(){
+    var f=SR.derivePlayerFlags(P({nationality:"BE",euEligible:true,developmentHistory:trainedAt("inter")}),cfg());
+    expectFalse(f.isClubTrained); expectTrue(f.isAssociationTrained); expectTrue(f.isLocallyTrained);
+  });
+  test("Derived flags","loans stop counting when loansCountTowardTraining=false",function(){
+    var pl=P({developmentHistory:trainedAt(CLUB,2011,true)});
+    expectTrue(SR.derivePlayerFlags(pl,cfg()).isClubTrained);
+    expectFalse(SR.derivePlayerFlags(pl,cfg("DOMESTIC_SERIE_A",{loansCountTowardTraining:false})).isClubTrained);
+  });
+  test("Derived flags","U22 cutoff derives from season (2026-27 ⇒ born ≥ 2005-01-01)",function(){
+    expectTrue(SR.derivePlayerFlags(P({dateOfBirth:"2005-03-01"}),cfg()).isUnder22);
+    expectFalse(SR.derivePlayerFlags(P({dateOfBirth:"2004-12-31"}),cfg()).isUnder22);
+  });
+
+  // capacity
+  test("Capacity (R1/R3/R4)","full legal 25-man list is valid, effectiveMax 25",function(){
+    var s=[].concat(fill(4,clubTrained),fill(4,function(){return assocTrained();}),fill(17,function(){return plain();}));
+    var r=SR.validateSquad(s,cfg());
+    expectEq(r.listASize,25); expectEq(r.effectiveMax,25); expectEq(r.forfeitedSlots,0); expectTrue(r.valid);
+  });
+  test("Capacity (R1/R3/R4)","THE MILAN CASE — 1 club + 3 assoc ⇒ effectiveMax 22, forfeited 3",function(){
+    var s=[].concat(fill(1,clubTrained),fill(3,function(){return assocTrained();}),fill(21,function(){return plain();}));
+    var r=SR.validateSquad(s,cfg());
+    expectEq(r.counts.clubTrained,1); expectEq(r.counts.associationTrained,4);
+    expectEq(r.effectiveMax,22); expectEq(r.forfeitedSlots,3); expectFalse(r.valid);
+    expectTrue(r.violations.some(function(v){return v.code==="LIST_A_EXCEEDS_EFFECTIVE_MAX";}));
+  });
+  test("Capacity (R1/R3/R4)","weak-homegrown club is valid once trimmed to 22",function(){
+    var s=[].concat(fill(1,clubTrained),fill(3,function(){return assocTrained();}),fill(18,function(){return plain();}));
+    var r=SR.validateSquad(s,cfg());
+    expectEq(r.listASize,22); expectEq(r.effectiveMax,22); expectTrue(r.valid);
+  });
+  test("Capacity (R1/R3/R4)","forfeited slots are NOT backfillable by a non-homegrown player",function(){
+    var s=[].concat(fill(1,clubTrained),fill(3,function(){return assocTrained();}),fill(18,function(){return plain();}));
+    var res=SR.canRegister(plain(),s,cfg());
+    expectFalse(res.allowed); expectTrue(res.blockingRules.indexOf("R4")>=0);
+  });
+
+  // List B
+  function fullLegal(){ return [].concat(fill(4,clubTrained),fill(4,function(){return assocTrained();}),fill(17,function(){return plain();})); }
+  test("Under-22 / List B (R2)","a U22 player does NOT consume a List A slot",function(){
+    var s=fullLegal(); s.push(P({dateOfBirth:"2007-05-01"}));
+    var r=SR.validateSquad(s,cfg());
+    expectEq(r.listASize,25); expectEq(r.listBSize,1); expectTrue(r.valid);
+  });
+  test("Under-22 / List B (R2)","a U22 can register even with List A full",function(){
+    var res=SR.canRegister(P({dateOfBirth:"2007-05-01"}),fullLegal(),cfg());
+    expectTrue(res.allowed); expectEq(res.attemptedList,"B"); expectEq(res.slot,"LIST_B");
+  });
+  test("Under-22 / List B (R2)","forceListA keeps a club-trained youngster on List A as homegrown",function(){
+    var y=P({dateOfBirth:"2007-01-01",forceListA:true,developmentHistory:[0,1,2].map(function(i){return {clubId:CLUB,season:(2022+i)+"-"+String(2023+i).slice(2),onLoan:false};})});
+    var r=SR.validateSquad([y],cfg());
+    expectEq(r.listASize,1); expectTrue(r.players[0].flags.isClubTrained);
+  });
+
+  // slot routing
+  test("canRegister routing","a homegrown signing brings their own slot (raises effectiveMax)",function(){
+    var s=[].concat(fill(1,clubTrained),fill(3,function(){return assocTrained();}),fill(18,function(){return plain();}));
+    var res=SR.canRegister(clubTrained(),s,cfg());
+    expectTrue(res.allowed); expectEq(res.slot,"CLUB_TRAINED");
+  });
+
+  // non-EU
+  function twoNewNonEu(){ return [P({euEligible:false,registeredThisSeason:true}),P({euEligible:false,registeredThisSeason:true})]; }
+  test("Non-EU cap (R5)","blocks a 3rd NEW non-EU registration",function(){
+    var res=SR.canRegister(P({euEligible:false,registeredThisSeason:true}),twoNewNonEu(),cfg());
+    expectFalse(res.allowed); expectTrue(res.blockingRules.indexOf("R5")>=0);
+  });
+  test("Non-EU cap (R5)","allows a NEW EU player regardless of non-EU count",function(){
+    var res=SR.canRegister(P({euEligible:true,registeredThisSeason:true}),twoNewNonEu(),cfg());
+    expectTrue(res.allowed);
+  });
+  test("Non-EU cap (R5)","does not require offloading an existing non-EU player",function(){
+    var old=[P({euEligible:false,registeredThisSeason:false}),P({euEligible:false,registeredThisSeason:false})];
+    var res=SR.canRegister(P({euEligible:false,registeredThisSeason:true}),old,cfg());
+    expectTrue(res.allowed);
+  });
+  test("Non-EU cap (R5)","UEFA_LIST_A variant ignores the non-EU rule",function(){
+    var res=SR.canRegister(P({euEligible:false,registeredThisSeason:true}),twoNewNonEu(),cfg("UEFA_LIST_A",{enforceNonEuRule:false}));
+    expectTrue(res.allowed);
+  });
+
+  return { results:results, groups:groups, passed:results.filter(function(r){return r.ok;}).length, total:results.length };
+}
+
+function renderSuite(){
+  var out=runSuite();
+  var pill=document.getElementById("suite-pill");
+  pill.className="pill "+(out.passed===out.total?"pass":"fail");
+  pill.textContent=out.passed+" / "+out.total+" PASS";
+  var host=document.getElementById("suite"); host.innerHTML="";
+  Object.keys(out.groups).forEach(function(g){
+    var h=document.createElement("div"); h.className="grp"; h.textContent=g; host.appendChild(h);
+    out.groups[g].forEach(function(r){
+      var d=document.createElement("div"); d.className="test "+(r.ok?"ok":"no");
+      d.innerHTML='<span class="dot"></span><div><div class="tn">'+r.name+'</div>'+(r.ok?'':'<div class="td">'+r.detail+'</div>')+'</div>';
+      host.appendChild(d);
+    });
+  });
+}
+
+/* ---------- interactive inspector ---------- */
+var state={ variant:"DOMESTIC_SERIE_A", club:1, assoc:3, free:18, u22:3, newNonEu:0, loans:true };
+function buildSquad(){
+  var s=[];
+  for(var i=0;i<state.club;i++) s.push(clubTrained());
+  for(i=0;i<state.assoc;i++) s.push(assocTrained());
+  for(i=0;i<state.free;i++) s.push(plain({ euEligible: i<state.newNonEu?false:true, registeredThisSeason: i<state.newNonEu?true:undefined }));
+  for(i=0;i<state.u22;i++) s.push(P({dateOfBirth:"2007-04-01"}));
+  return s;
+}
+function controlsHTML(){
+  function slider(key,label,max,hint){ return '<div class="ctrl"><label>'+label+'<b id="v-'+key+'">'+state[key]+'</b></label>'+
+    '<input type="range" min="0" max="'+max+'" value="'+state[key]+'" data-k="'+key+'"/><div class="hint">'+hint+'</div></div>'; }
+  return slider("club","Club-trained (List A)",8,"min(n,4) fill the 4 club slots")
+    + slider("assoc","Assoc-trained only (List A)",8,"club-trained also count as assoc")
+    + slider("free","Other List A players",20,"consume the 17 free slots")
+    + slider("u22","Under-22 (List B)",10,"unlimited · outside the 25")
+    + (state.variant==="DOMESTIC_SERIE_A" ? slider("newNonEu","New non-EU this window",5,"cap is 2 per season") : "")
+    + '<div class="ctrl"><label>Loans count toward training</label><div class="toggle" id="loan-toggle">'
+    + '<button data-l="true" class="'+(state.loans?"on":"")+'">Yes</button>'
+    + '<button data-l="false" class="'+(!state.loans?"on":"")+'">No</button></div></div>'
+    + '<div class="preset" id="presets">'
+    + '<button data-p="legal">Legal 25</button><button data-p="milan">Milan case</button>'
+    + '<button data-p="nonEu">Non-EU overflow</button></div>';
+}
+function seg(w,cls,txt){ return w>0?'<div class="'+cls+'" style="flex:'+w+'">'+(w>=2?txt:"")+'</div>':""; }
+function renderInspector(){
+  var c=cfg(state.variant,{loansCountTowardTraining:state.loans});
+  var r=SR.validateSquad(buildSquad(),c);
+  document.getElementById("controls").innerHTML=controlsHTML();
+  wireControls();
+  var cc=r.counts;
+  var free=Math.max(0, r.effectiveMax - cc.countedClub - cc.countedAssociation);
+  var forf=r.forfeitedSlots;
+  var html=''
+   +'<div class="verdict '+(r.valid?"ok":"no")+'"><div><div class="big">'+(r.valid?"VALID":"INVALID")+'</div>'
+   +'<div class="sub">'+r.variant.replace(/_/g," ")+' · '+r.season+'</div></div></div>'
+   +'<div class="stats">'
+   +'<div class="stat"><div class="n">'+r.listASize+'</div><div class="l">List A size</div></div>'
+   +'<div class="stat '+(r.listASize>r.effectiveMax?"warn":"good")+'"><div class="n">'+r.effectiveMax+'</div><div class="l">Effective max</div></div>'
+   +'<div class="stat '+(forf>0?"warn":"")+'"><div class="n">'+forf+'</div><div class="l">Forfeited</div></div>'
+   +'</div>'
+   +'<div class="slotbar">'
+   + seg(cc.countedClub,"seg-club",cc.countedClub+" club")
+   + seg(cc.countedAssociation,"seg-assoc",cc.countedAssociation+" assoc")
+   + seg(free,"seg-free",free+" free")
+   + seg(forf,"seg-forfeit",forf+" lost")
+   +'</div>'
+   +'<div class="slotleg"><span><i class="seg-club" style="background:var(--rosso)"></i>Club ≤4</span>'
+   +'<span><i style="background:#8E0010"></i>Assoc ≤4</span><span><i style="background:var(--nero-3)"></i>Free 17</span>'
+   +'<span><i style="background:#2a0c0c"></i>Forfeited</span><span style="margin-left:auto;color:var(--oro)">List B: '+r.listBSize+'</span></div>';
+
+  if(r.violations.length){ r.violations.forEach(function(v){ html+='<div class="msg v"><span class="code">'+v.rule+' · '+v.code+'</span><br/>'+v.message+'</div>'; }); }
+  else { html+='<div class="msg" style="background:#0c2418;border:1px solid #18432c;color:#5fe39c">No rule violations.</div>'; }
+  if(r.warnings.length){ r.warnings.forEach(function(w){ html+='<div class="msg w">'+w+'</div>'; }); }
+  document.getElementById("readout").innerHTML=html;
+}
+function wireControls(){
+  document.querySelectorAll('#controls input[type=range]').forEach(function(el){
+    el.addEventListener('input',function(){ state[el.dataset.k]=parseInt(el.value,10); var b=document.getElementById('v-'+el.dataset.k); if(b)b.textContent=el.value; renderInspector(); });
+  });
+  var lt=document.getElementById("loan-toggle");
+  if(lt) lt.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ state.loans=b.dataset.l==="true"; renderInspector(); }); });
+  var pr=document.getElementById("presets");
+  if(pr) pr.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){
+    if(b.dataset.p==="legal"){ state.club=4;state.assoc=4;state.free=17;state.u22=3;state.newNonEu=0; }
+    if(b.dataset.p==="milan"){ state.club=1;state.assoc=3;state.free=21;state.u22=4;state.newNonEu=0; }
+    if(b.dataset.p==="nonEu"){ state.club=4;state.assoc=4;state.free=17;state.u22=2;state.newNonEu=3; }
+    renderInspector();
+  }); });
+}
+document.getElementById("variant-toggle").querySelectorAll('button').forEach(function(b){
+  b.addEventListener('click',function(){
+    state.variant=b.dataset.v;
+    document.getElementById("variant-toggle").querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
+    document.getElementById("variant-label").textContent=(state.variant==="DOMESTIC_SERIE_A"?"Serie A List":"UEFA List A")+" · 2026-27";
+    renderInspector();
+  });
+});
+
+renderInspector();
+renderSuite();
+</script>
+</body>
+</html>
