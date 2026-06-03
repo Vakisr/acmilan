@@ -1,0 +1,11 @@
+{
+  "name": "ac-milan-transfer-dreams",
+  "version": "1.0.0",
+  "description": "AC Milan Transfer Dreams — crowdsourced squad builder for r/ACMilan",
+  "scripts": {
+    "start": "npx serve project -l 3000",
+    "dev": "npx serve project -l 3000"
+  },
+  "keywords": ["ac-milan", "football", "transfer", "react"],
+  "license": "MIT"
+}
