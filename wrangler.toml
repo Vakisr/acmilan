@@ -1,0 +1,8 @@
+name = "acmilan"
+pages_build_output_dir = "project"
+compatibility_date = "2024-09-23"
+
+[[kv_namespaces]]
+binding = "VOTES"
+id = "PLACEHOLDER_KV_ID"          # replace after: wrangler kv namespace create VOTES
+preview_id = "PLACEHOLDER_KV_PREVIEW_ID"  # replace after: wrangler kv namespace create VOTES --preview
