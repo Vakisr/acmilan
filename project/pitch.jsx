@@ -57,6 +57,7 @@ function Pitch(props){
   };
 
   return (
+    <React.Fragment>
     <div className="scroll" id="view-pitch">
       <div className="pitch-head">
         <div className="kicker">{isMine ? "Your rebuild · unique to you" : "Crowdsourced · the people's pick"}</div>
@@ -138,18 +139,6 @@ function Pitch(props){
               );
             })}
           </div>
-        </div>
-
-        {/* bench */}
-        <div className="bench">
-          <div className="bench-lab">Bench &amp; squad <b>· {bench.length}</b></div>
-          {bench.length ? (
-            <div className="bench-row">
-              {bench.map(p => <SubTok key={p.id} p={p} onClick={()=>openBench(p)} />)}
-            </div>
-          ) : (
-            <div className="bench-empty">No subs yet — sign more players in the Mercato.</div>
-          )}
         </div>
 
         {/* contributor counter */}
@@ -237,6 +226,19 @@ function Pitch(props){
       </div>
       <div className="spacer"/>
     </div>
+
+    {/* bench — always visible, outside scroll */}
+    <div className="bench">
+      <div className="bench-lab">Bench &amp; squad <b>· {bench.length}</b></div>
+      {bench.length ? (
+        <div className="bench-row">
+          {bench.map(p => <SubTok key={p.id} p={p} onClick={()=>openBench(p)} />)}
+        </div>
+      ) : (
+        <div className="bench-empty">No subs yet — sign more players in the Mercato.</div>
+      )}
+    </div>
+    </React.Fragment>
   );
 }
 window.Pitch = Pitch;

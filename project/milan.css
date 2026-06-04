@@ -159,7 +159,7 @@ img{ display:block; }
 .pitch-head h1 em{ font-style:normal; color:var(--rosso-bright); }
 
 /* coach selector */
-.coachbar{ display:flex; gap:8px; padding:10px 14px 4px; }
+.coachbar{ display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px 14px 4px; }
 .coachpick{
   flex:1; position:relative; overflow:hidden;
   border:1px solid var(--linea); border-radius:13px;
@@ -528,9 +528,9 @@ img{ display:block; }
 .modetog button.on .mt-sub{ color:rgba(255,255,255,.8); }
 
 /* =================================================================
-   BENCH
+   BENCH — always-visible strip below the pitch scroll
    ================================================================= */
-.bench{ margin:10px 0 4px; }
+.bench{ flex-shrink:0; border-top:1px solid var(--linea); background:var(--nero); padding-top:4px; }
 .bench .bench-lab{
   padding:0 14px 8px; font-family:var(--ff-cond); font-weight:600; font-size:11px;
   letter-spacing:2px; text-transform:uppercase; color:var(--fumo-2);
@@ -625,16 +625,15 @@ img{ display:block; }
   .pview .contrib{ grid-area:contrib; margin:0 0 10px; }
   .pview .sharebar{ grid-area:share; margin:0 0 10px; }
   .pview .sharednote{ grid-area:note; margin:0 0 10px; }
-  .pview .bench{ grid-area:bench; margin:14px 0 0; }
   .pview{
     grid-template-areas:
       "pitch coach"
       "pitch blurb"
       "pitch contrib"
       "pitch share"
-      "pitch note"
-      "bench bench";
+      "pitch note";
   }
+  .bench{ padding:8px 20px 6px; }
   .pview .pitch{ max-width:none; }
   .pitch-head{ padding:18px 20px 2px; }
   .pitch-head h1{ font-size:34px; }

@@ -71,7 +71,7 @@ function App(){
   /* Live backend state — seeds from data.js are the fallback when API is unreachable */
   const [serverState, setServerState] = uS({
     votes: {},
-    coaches: { slot: 9120, glasner: 11890 },
+    coaches: { slot: 9120, glasner: 11890, pochettino: 8500, jaissle: 6200 },
     contributors: BASE_CONTRIB,
   });
   const [apiReady, setApiReady] = uS(false);
