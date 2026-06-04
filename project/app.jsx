@@ -157,6 +157,7 @@ function App(){
 
   const onVoteCoach = (id) => {
     setMyCoach(() => id);
+    setMode("mine");
     markContributed();
     flash("Lined up in " + M.FORMATIONS[id].name);
     postVote("coach", id);
