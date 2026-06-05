@@ -1,22 +1,30 @@
 const TM_BASE = "https://transfermarkt-api.fly.dev";
 const MILAN_ID = "5";
-const CACHE_KEY = "tm:players:v1";
+const CACHE_KEY = "tm:players:v2";
 const CACHE_TTL = 60 * 60 * 24; // 24 hours
 
-// Top European clubs to pull transfer targets from
-const MARKET_CLUBS = [
-  { id: "46",  name: "Inter Milan" },
-  { id: "506", name: "Juventus" },
-  { id: "6",   name: "Napoli" },
-  { id: "12",  name: "Roma" },
-  { id: "281", name: "Man City" },
-  { id: "11",  name: "Arsenal" },
-  { id: "31",  name: "Liverpool" },
-  { id: "583", name: "PSG" },
-  { id: "27",  name: "Bayern Munich" },
-  { id: "15",  name: "Leverkusen" },
-  { id: "418", name: "Real Madrid" },
-  { id: "131", name: "Barcelona" },
+// Top 20 leagues — competition IDs and how many clubs to pull from each
+const TOP_LEAGUES = [
+  { id: "GB1",  name: "Premier League",      topN: 8 },
+  { id: "ES1",  name: "La Liga",             topN: 6 },
+  { id: "L1",   name: "Bundesliga",          topN: 6 },
+  { id: "IT1",  name: "Serie A",             topN: 6 },
+  { id: "FR1",  name: "Ligue 1",             topN: 5 },
+  { id: "PO1",  name: "Primeira Liga",       topN: 4 },
+  { id: "NL1",  name: "Eredivisie",          topN: 4 },
+  { id: "TR1",  name: "Süper Lig",           topN: 4 },
+  { id: "SA1",  name: "Saudi Pro League",    topN: 4 },
+  { id: "BE1",  name: "Belgian Pro League",  topN: 3 },
+  { id: "SC1",  name: "Scottish Prem",       topN: 2 },
+  { id: "BRA1", name: "Brasileirão",         topN: 4 },
+  { id: "ARPR", name: "Argentine Primera",   topN: 3 },
+  { id: "MLS1", name: "MLS",                topN: 4 },
+  { id: "MEXA", name: "Liga MX",            topN: 3 },
+  { id: "A1",   name: "Austrian Bundesliga", topN: 3 },
+  { id: "JAP1", name: "J1 League",           topN: 3 },
+  { id: "GR1",  name: "Super League Greece", topN: 2 },
+  { id: "UKR1", name: "Ukrainian Premier",   topN: 2 },
+  { id: "KOR1", name: "K League 1",          topN: 2 },
 ];
 
 const TM_ROLES = {
@@ -65,22 +73,24 @@ const NAT_CODE = {
   "Côte d'Ivoire": "CIV", "United States of America": "USA",
   "Bosnia-Herzegovina": "BIH", "North Macedonia": "MKD", "Albania": "ALB",
   "Kosovo": "XKX", "Georgia": "GEO", "Azerbaijan": "AZE", "Finland": "FIN",
-  "Iceland": "ISL", "Cyprus": "CYP", "Malta": "MLT", "Luxembourg": "LUX",
-  "Israel": "ISR", "Saudi Arabia": "KSA", "Iran": "IRN", "Burkina Faso": "BFA",
-  "Mozambique": "MOZ", "Zimbabwe": "ZIM", "Tanzania": "TAN", "Uganda": "UGA",
-  "South Africa": "RSA", "Kenya": "KEN", "Zambia": "ZAM", "Angola": "ANG",
-  "New Zealand": "NZL", "China PR": "CHN", "Thailand": "THA", "Vietnam": "VIE",
-  "Russia": "RUS",
+  "Iceland": "ISL", "Cyprus": "CYP", "Israel": "ISR", "Saudi Arabia": "KSA",
+  "Iran": "IRN", "Burkina Faso": "BFA", "South Africa": "RSA", "Angola": "ANG",
+  "Mozambique": "MOZ", "Zimbabwe": "ZIM", "New Zealand": "NZL",
+  "China PR": "CHN", "Thailand": "THA", "Vietnam": "VIE", "Russia": "RUS",
+  "Paraguay": "PAR", "Bolivia": "BOL", "Honduras": "HON", "Costa Rica": "CRC",
+  "Panama": "PAN", "Dominican Republic": "DOM", "Haiti": "HAI",
+  "Congo": "CGO", "Cameroon": "CMR", "Togo": "TOG", "Benin": "BEN",
+  "Libya": "LBA", "Sudan": "SDN", "Ethiopia": "ETH",
 };
 
 function parseTMValue(v) {
   if (!v || v === "-" || v === "€-") return 0;
   const s = String(v).replace(/,/g, ".");
-  const m = s.match(/([\d.]+)\s*(bn|m|k)/i);
+  const m = s.match(/([\d.]+)\s*(bn|bil|m|k)/i);
   if (!m) return 0;
   const n = parseFloat(m[1]);
   const unit = m[2].toLowerCase();
-  if (unit === "bn") return Math.round(n * 1000);
+  if (unit === "bn" || unit === "bil") return Math.round(n * 1000);
   if (unit === "m") return Math.round(n * 10) / 10;
   if (unit === "k") return Math.round(n / 100) / 10;
   return 0;
@@ -98,14 +108,13 @@ function parseAge(p) {
 function parseNat(p) {
   const nat = p.nationality;
   if (!nat) return "---";
-  const name = Array.isArray(nat) ? (nat[0]?.name || nat[0] || "") : (nat?.name || nat || "");
+  const name = Array.isArray(nat) ? (nat[0]?.name || nat[0] || "") : (nat?.name || String(nat) || "");
   return NAT_CODE[String(name)] || String(name).slice(0, 3).toUpperCase();
 }
 
 function shortName(full) {
   if (!full) return "Unknown";
   const parts = full.trim().split(/\s+/);
-  // Use last word unless it's a suffix
   return parts[parts.length - 1];
 }
 
@@ -127,18 +136,29 @@ function mapPlayer(p, from) {
   };
 }
 
-async function fetchClub(id, from) {
+async function tmFetch(path) {
   try {
-    const res = await fetch(`${TM_BASE}/clubs/${id}/players`, {
+    const res = await fetch(`${TM_BASE}${path}`, {
       headers: { "User-Agent": "TransferDreams/1.0 (fan app)" },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(10000),
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.players || []).map(p => mapPlayer(p, from));
+    if (!res.ok) return null;
+    return await res.json();
   } catch {
-    return [];
+    return null;
   }
+}
+
+async function fetchClubPlayers(clubId, clubName) {
+  const data = await tmFetch(`/clubs/${clubId}/players`);
+  if (!data) return [];
+  return (data.players || []).map(p => mapPlayer(p, clubName));
+}
+
+async function fetchLeagueClubs(leagueId, topN) {
+  const data = await tmFetch(`/competitions/${leagueId}/clubs`);
+  if (!data || !Array.isArray(data.clubs)) return [];
+  return data.clubs.slice(0, topN).map(c => ({ id: c.id, name: c.name }));
 }
 
 export async function onRequestGet({ env }) {
@@ -150,13 +170,29 @@ export async function onRequestGet({ env }) {
     });
   }
 
-  // Parallel fetch: Milan squad + all market clubs
+  // Phase 1: fetch all league club lists in parallel
+  const leagueClubLists = await Promise.all(
+    TOP_LEAGUES.map(l => fetchLeagueClubs(l.id, l.topN).then(clubs => ({ league: l.name, clubs })))
+  );
+
+  // Phase 2: collect unique club IDs to fetch (excluding Milan)
+  const clubMap = new Map(); // id -> { id, name, league }
+  for (const { league, clubs } of leagueClubLists) {
+    for (const c of clubs) {
+      if (c.id && c.id !== MILAN_ID && !clubMap.has(c.id)) {
+        clubMap.set(c.id, { id: c.id, name: c.name, league });
+      }
+    }
+  }
+
+  // Phase 3: fetch Milan squad + all market club squads in parallel
+  const allClubs = [...clubMap.values()];
   const [milanPlayers, ...marketGroups] = await Promise.all([
-    fetchClub(MILAN_ID, "AC Milan"),
-    ...MARKET_CLUBS.map(c => fetchClub(c.id, c.name)),
+    fetchClubPlayers(MILAN_ID, "AC Milan"),
+    ...allClubs.map(c => fetchClubPlayers(c.id, `${c.name} · ${c.league}`)),
   ]);
 
-  // Build set of Milan player names to exclude from market
+  // Build exclusion set from Milan squad names
   const milanNames = new Set(milanPlayers.map(p => p.name.toLowerCase()));
 
   // Deduplicate market pool by TM id, exclude Milan players, require value ≥ 3M
@@ -171,7 +207,7 @@ export async function onRequestGet({ env }) {
 
   const market = [...marketMap.values()].sort((a, b) => b.value - a.value);
 
-  const result = { squad: milanPlayers, market };
+  const result = { squad: milanPlayers, market, clubs: allClubs.length };
   await env.VOTES.put(CACHE_KEY, JSON.stringify(result), { expirationTtl: CACHE_TTL });
 
   return Response.json(result, {
