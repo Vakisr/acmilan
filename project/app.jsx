@@ -292,7 +292,7 @@ function App(){
         />
       )}
       {tab === "mercato" && (
-        <Mercato ownedIds={ownedIds} budget={budget} squadSize={owned.length} onBuy={onBuy} onPromote={onPromote} />
+        <Mercato ownedIds={ownedIds} budget={budget} squadSize={owned.length} onBuy={onBuy} onPromote={onPromote} allBuy={allBuy} />
       )}
       {tab === "squad" && (
         <SquadView owned={owned} budget={budget} squadValue={squadValue} votesOf={votesOf} onSell={onSell} onReset={resetAll} />

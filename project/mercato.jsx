@@ -1,6 +1,5 @@
 /* MERCATO (all players · search · filters) + SQUAD (roster, sell) */
 
-const BUYPOOL = [...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY];
 const CATS = [
   { k:"all", label:"All" },
   { k:"target", label:"Targets" },
@@ -24,15 +23,16 @@ const POSF = [
 const POS_ROLES = Object.fromEntries(POSF.map(f => [f.k, f.roles]));
 
 function Mercato(props){
-  const { ownedIds, budget, onBuy, onPromote, squadSize } = props;
+  const { ownedIds, budget, onBuy, onPromote, squadSize, allBuy } = props;
+  const buyPool = allBuy || [...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY];
   const [cat, setCat] = React.useState("all");
   const [pos, setPos] = React.useState("ALL");
   const [q, setQ] = React.useState("");
   const [limit, setLimit] = React.useState(60);
   const has = (id) => ownedIds.includes(id);
 
-  let list = BUYPOOL.filter(p => !has(p.id));
-  if (cat === "target") list = list.filter(p => M.MARKET.indexOf(p) !== -1);
+  let list = buyPool.filter(p => !has(p.id));
+  if (cat === "target") list = list.filter(p => M.MARKET.some(t => t.id === p.id));
   else if (cat !== "all") list = list.filter(p => p.tags.indexOf(cat) !== -1);
   if (pos !== "ALL") {
     const rs = POS_ROLES[pos];
