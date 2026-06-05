@@ -1,8 +1,6 @@
 /* PITCH VIEW — People's XI (crowd) vs My XI (build + share), bench, sheet */
 const { useState: useStateP } = React;
 
-const ALLBUY = [...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY];
-
 function SubTok({ p, onClick }){
   return (
     <button className="subtok" onClick={onClick}>
@@ -17,7 +15,7 @@ function Pitch(props){
   const {
     mode, setMode, peopleSquad, mySquad, coaches, communityCoach, myCoach, onVoteCoach,
     votesOf, myVotes, onVotePlayer, myLineup, onStart, onBuy, onPromote, onSell, ownedIds, budget,
-    contributors, contributed, apiReady, onShare, sharedView, onClaimShared, goMercato,
+    contributors, contributed, apiReady, onShare, sharedView, onClaimShared, goMercato, allBuy,
   } = props;
 
   const isMine = mode === "mine";
@@ -37,7 +35,7 @@ function Pitch(props){
   const ownedCands = activeSlot ? candidatesFor(role, squad, votesOf) : [];
   const starterId = activeSlot ? (xi[activeSlot.id] && xi[activeSlot.id].id) : null;
   const signCands = activeSlot
-    ? ALLBUY.filter(p => !ownedIds.includes(p.id) && p.roles.includes(role))
+    ? (allBuy || []).filter(p => !ownedIds.includes(p.id) && p.roles.includes(role))
             .sort((a,b)=> b.value - a.value).slice(0, 40)
     : [];
 

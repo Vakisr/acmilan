@@ -1,10 +1,10 @@
 /* APP — state, persistence, share-via-URL, devil crest, nav */
 const { useState: uS, useEffect: uE, useCallback: uC, useMemo: uM } = React;
 
-const ALL = [...M.SQUAD, ...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY];
-const INDEX = Object.fromEntries(ALL.map(p => [p.id, p]));
+const ALL_STATIC = [...M.SQUAD, ...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY];
+const INDEX_STATIC = Object.fromEntries(ALL_STATIC.map(p => [p.id, p]));
 const SQUAD_IDS = M.SQUAD.map(p => p.id);
-const STORE = "milan-transfer-dreams-v3";
+const STORE = "milan-transfer-dreams-v4";
 const VOTE_WEIGHT = 1;
 const BASE_CONTRIB = 14207;
 const buyHype = (p) => Math.round(p.value * 90) + 1200;
@@ -76,11 +76,44 @@ function App(){
   });
   const [apiReady, setApiReady] = uS(false);
 
-  /* Fetch live tallies once on mount */
+  /* Live player index — starts with static data, enriched by TM API */
+  const [liveIndex, setLiveIndex] = uS(INDEX_STATIC);
+  /* Dynamic buy pool — starts static, replaced by TM market data when available */
+  const [allBuy, setAllBuy] = uS([...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY]);
+
+  /* Fetch live tallies + player data once on mount */
   uE(() => {
     fetch("/api/state")
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data){ setServerState(data); setApiReady(true); } })
+      .catch(() => {});
+
+    fetch("/api/players")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        // Merge TM squad into index (keeps static IDs, enriches values/ages)
+        const enriched = { ...INDEX_STATIC };
+        for (const tmP of (data.squad || [])) {
+          const key = tmP.name.toLowerCase();
+          const match = M.SQUAD.find(p => p.name.toLowerCase() === key);
+          if (match) {
+            enriched[match.id] = {
+              ...match,
+              value: tmP.value || match.value,
+              age: tmP.age || match.age,
+              num: tmP.num || match.num,
+            };
+          }
+        }
+        // Add TM market players to index too
+        for (const p of (data.market || [])) enriched[p.id] = p;
+        setLiveIndex(enriched);
+        // Replace world pool with live market data, keep curated lists
+        if (data.market && data.market.length > 0) {
+          setAllBuy([...M.MARKET, ...data.market, ...M.RELEGATED, ...M.ACADEMY]);
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -91,7 +124,7 @@ function App(){
     }));
   }, [tab, mode, ownedIds, budget, seeds, myLineup, myVotes, myCoach, contributed]);
 
-  const owned = uM(() => ownedIds.map(id => INDEX[id]).filter(Boolean), [ownedIds]);
+  const owned = uM(() => ownedIds.map(id => liveIndex[id]).filter(Boolean), [ownedIds, liveIndex]);
   const squadValue = owned.reduce((s,p)=> s + p.value, 0);
 
   /* votesOf: server tally is source of truth; seeds (buy hype) override; +1 optimistic for own vote */
@@ -192,6 +225,7 @@ function App(){
       for (const c in ml){ n[c] = {}; for (const s in ml[c]) if (ml[c][s] !== p.id) n[c][s] = ml[c][s]; }
       return n;
     });
+    setLiveIndex(idx => { const n = {...idx}; delete n[p.id]; return n; });
     flash(p.short + " sold · +" + fmtMoney(p.value === 0 ? 0 : p.value));
     markContributed();
   };
@@ -254,7 +288,7 @@ function App(){
           onBuy={onBuy} onPromote={onPromote} onSell={onSell} ownedIds={ownedIds} budget={budget}
           contributors={contributors} contributed={contributed} apiReady={apiReady}
           onShare={onShare} sharedView={sharedView} onClaimShared={onClaimShared}
-          goMercato={()=>setTab("mercato")}
+          goMercato={()=>setTab("mercato")} allBuy={allBuy}
         />
       )}
       {tab === "mercato" && (
