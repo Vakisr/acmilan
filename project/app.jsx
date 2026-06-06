@@ -9,6 +9,15 @@ const VOTE_WEIGHT = 1;
 const BASE_CONTRIB = 14207;
 const buyHype = (p) => Math.round(p.value * 90) + 1200;
 
+/* Supabase config — paste your project URL and anon key from supabase.com > Settings > API */
+const SUPA_URL = "https://YOUR_PROJECT_ID.supabase.co";
+const SUPA_KEY = "YOUR_ANON_KEY";
+const SUPA_H = { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` };
+const SUPA_READY = SUPA_URL !== "https://YOUR_PROJECT_ID.supabase.co";
+
+/* Seed coach vote counts so they start from realistic numbers even before real votes accumulate */
+const SEED_COACHES = { slot: 9120, glasner: 11890, pochettino: 8500, jaissle: 6200 };
+
 function load(){
   try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch(e){ return {}; }
 }
@@ -20,7 +29,7 @@ function readShared(){
   } catch(e){ return null; }
 }
 
-/* Persistent session ID for vote deduplication on the backend */
+/* Persistent session ID for vote deduplication */
 function getSessionId(){
   let id = localStorage.getItem("milan-session-id");
   if (!id){
@@ -68,31 +77,50 @@ function App(){
   const [toast, setToast] = uS(null);
   const toastT = React.useRef(null);
 
-  /* Live backend state — seeds from data.js are the fallback when API is unreachable */
+  /* Vote state — seeded with realistic base numbers, real Supabase counts added on top */
   const [serverState, setServerState] = uS({
     votes: {},
-    coaches: { slot: 9120, glasner: 11890, pochettino: 8500, jaissle: 6200 },
+    coaches: { ...SEED_COACHES },
     contributors: BASE_CONTRIB,
   });
   const [apiReady, setApiReady] = uS(false);
 
-  /* Live player index — starts with static data, enriched by TM API */
+  /* Live player index — starts with static data, enriched by players.json */
   const [liveIndex, setLiveIndex] = uS(INDEX_STATIC);
-  /* Dynamic buy pool — starts static, replaced by TM market data when available */
+  /* Dynamic buy pool — starts static, replaced by players.json market data when available */
   const [allBuy, setAllBuy] = uS([...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY]);
 
-  /* Fetch live tallies + player data once on mount */
+  /* Fetch votes from Supabase + player data from static JSON once on mount */
   uE(() => {
-    fetch("/api/state")
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data){ setServerState(data); setApiReady(true); } })
-      .catch(() => {});
+    if (SUPA_READY) {
+      Promise.all([
+        fetch(`${SUPA_URL}/rest/v1/player_votes?select=player_id,session_id`, { headers: SUPA_H })
+          .then(r => r.ok ? r.json() : []),
+        fetch(`${SUPA_URL}/rest/v1/coach_votes?select=coach_id,session_id`, { headers: SUPA_H })
+          .then(r => r.ok ? r.json() : []),
+      ])
+        .then(([pvRows, cvRows]) => {
+          const votes = {};
+          const sessions = new Set();
+          for (const row of pvRows) {
+            votes[row.player_id] = (votes[row.player_id] || 0) + 1;
+            sessions.add(row.session_id);
+          }
+          const coaches = { ...SEED_COACHES };
+          for (const row of cvRows) {
+            coaches[row.coach_id] = (coaches[row.coach_id] || 0) + 1;
+            sessions.add(row.session_id);
+          }
+          setServerState({ votes, coaches, contributors: BASE_CONTRIB + sessions.size });
+          setApiReady(true);
+        })
+        .catch(() => {});
+    }
 
-    fetch("/api/players")
+    fetch("/players.json")
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
-        // Merge TM squad into index (keeps static IDs, enriches values/ages)
         const enriched = { ...INDEX_STATIC };
         for (const tmP of (data.squad || [])) {
           const key = tmP.name.toLowerCase();
@@ -106,10 +134,8 @@ function App(){
             };
           }
         }
-        // Add TM market players to index too
         for (const p of (data.market || [])) enriched[p.id] = p;
         setLiveIndex(enriched);
-        // Replace world pool with live market data, keep curated lists
         if (data.market && data.market.length > 0) {
           setAllBuy([...M.MARKET, ...data.market, ...M.RELEGATED, ...M.ACADEMY]);
         }
@@ -141,7 +167,6 @@ function App(){
   const sortedCoach = [...coaches].sort((a,b)=> b.liveVotes - a.liveVotes);
   const communityCoach = sortedCoach[0].id;
 
-  /* Use server contributor count when live; fall back to local increment */
   const contributors = apiReady ? serverState.contributors : BASE_CONTRIB + (contributed ? 1 : 0);
 
   const flash = (msg, bad) => {
@@ -162,21 +187,23 @@ function App(){
     return { msg: " · €" + wageOf(p) + "M/yr wages", bad: false };
   };
 
-  /* Fire-and-forget vote to backend; on success patch serverState optimistically */
+  /* Fire-and-forget vote to Supabase with session dedup via PRIMARY KEY */
   function postVote(type, id){
-    fetch("/api/vote", {
+    if (!SUPA_READY) return;
+    const table = type === "coach" ? "coach_votes" : "player_votes";
+    const body = type === "coach"
+      ? { coach_id: id, session_id: SESSION_ID }
+      : { player_id: id, session_id: SESSION_ID };
+    fetch(`${SUPA_URL}/rest/v1/${table}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, id, sessionId: SESSION_ID }),
+      headers: { ...SUPA_H, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates" },
+      body: JSON.stringify(body),
     })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (!data || !data.ok) return;
-        setServerState(prev => {
-          const key = type === "coach" ? "coaches" : "votes";
-          return { ...prev, [key]: { ...prev[key], [id]: data.votes }, contributors: prev.contributors + 1 };
-        });
-        setApiReady(true);
+      .then(r => {
+        if (r.ok || r.status === 201) {
+          setServerState(prev => ({ ...prev, contributors: prev.contributors + 1 }));
+          setApiReady(true);
+        }
       })
       .catch(() => {});
   }

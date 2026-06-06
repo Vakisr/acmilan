@@ -1,9 +1,15 @@
+#!/usr/bin/env node
+// Regenerate project/players.json with live Transfermarkt data.
+// Run: node scripts/fetch-players.js
+// Requires Node 18+ (native fetch).
+
+const fs = require("fs");
+const path = require("path");
+
 const TM_BASE = "https://transfermarkt-api.fly.dev";
 const MILAN_ID = "5";
-const CACHE_KEY = "tm:players:v3";
-const CACHE_TTL = 60 * 60 * 24; // 24 hours
+const OUT = path.join(__dirname, "../project/players.json");
 
-// Top 20 leagues — all clubs fetched so no player gets missed (e.g. Karetsas at Genk)
 const TOP_LEAGUES = [
   { id: "GB1",  name: "Premier League"      },
   { id: "ES1",  name: "La Liga"             },
@@ -79,7 +85,7 @@ const NAT_CODE = {
   "China PR": "CHN", "Thailand": "THA", "Vietnam": "VIE", "Russia": "RUS",
   "Paraguay": "PAR", "Bolivia": "BOL", "Honduras": "HON", "Costa Rica": "CRC",
   "Panama": "PAN", "Dominican Republic": "DOM", "Haiti": "HAI",
-  "Congo": "CGO", "Cameroon": "CMR", "Togo": "TOG", "Benin": "BEN",
+  "Congo": "CGO", "Togo": "TOG", "Benin": "BEN",
   "Libya": "LBA", "Sudan": "SDN", "Ethiopia": "ETH",
 };
 
@@ -136,23 +142,39 @@ function mapPlayer(p, from) {
   };
 }
 
-async function tmFetch(path) {
-  try {
-    const res = await fetch(`${TM_BASE}${path}`, {
-      headers: { "User-Agent": "TransferDreams/1.0 (fan app)" },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+async function tmFetch(urlPath, retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${TM_BASE}${urlPath}`, {
+        headers: { "User-Agent": "TransferDreams/1.0 (fan app)" },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (res.ok) return await res.json();
+      if (res.status === 429 && attempt < retries) {
+        await sleep(2000 * (attempt + 1));
+        continue;
+      }
+      return null;
+    } catch {
+      if (attempt < retries) await sleep(1000);
+    }
   }
+  return null;
 }
 
-async function fetchClubPlayers(clubId, clubName) {
-  const data = await tmFetch(`/clubs/${clubId}/players`);
-  if (!data) return [];
-  return (data.players || []).map(p => mapPlayer(p, clubName));
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function batch(items, fn, size, delayMs = 400) {
+  const results = [];
+  for (let i = 0; i < items.length; i += size) {
+    const chunk = items.slice(i, i + size);
+    const chunkResults = await Promise.all(chunk.map(fn));
+    results.push(...chunkResults);
+    if (i + size < items.length) await sleep(delayMs);
+    process.stdout.write(`\r  ${Math.min(i + size, items.length)}/${items.length}`);
+  }
+  process.stdout.write("\n");
+  return results;
 }
 
 async function fetchLeagueClubs(leagueId) {
@@ -161,22 +183,21 @@ async function fetchLeagueClubs(leagueId) {
   return data.clubs.map(c => ({ id: c.id, name: c.name }));
 }
 
-export async function onRequestGet({ env }) {
-  // Serve from cache if fresh
-  const cached = await env.VOTES.get(CACHE_KEY);
-  if (cached) {
-    return Response.json(JSON.parse(cached), {
-      headers: { "Cache-Control": "public, max-age=3600" },
-    });
-  }
+async function fetchClubPlayers(clubId, clubName) {
+  const data = await tmFetch(`/clubs/${clubId}/players`);
+  if (!data) return [];
+  return (data.players || []).map(p => mapPlayer(p, clubName));
+}
 
-  // Phase 1: fetch all league club lists in parallel
-  const leagueClubLists = await Promise.all(
-    TOP_LEAGUES.map(l => fetchLeagueClubs(l.id).then(clubs => ({ league: l.name, clubs })))
+async function main() {
+  console.log("Phase 1: fetching league club lists…");
+  const leagueClubLists = await batch(
+    TOP_LEAGUES,
+    l => fetchLeagueClubs(l.id).then(clubs => ({ league: l.name, clubs })),
+    5, 300
   );
 
-  // Phase 2: collect unique club IDs to fetch (excluding Milan)
-  const clubMap = new Map(); // id -> { id, name, league }
+  const clubMap = new Map();
   for (const { league, clubs } of leagueClubLists) {
     for (const c of clubs) {
       if (c.id && c.id !== MILAN_ID && !clubMap.has(c.id)) {
@@ -185,17 +206,32 @@ export async function onRequestGet({ env }) {
     }
   }
 
-  // Phase 3: fetch Milan squad + all market club squads in parallel
   const allClubs = [...clubMap.values()];
-  const [milanPlayers, ...marketGroups] = await Promise.all([
-    fetchClubPlayers(MILAN_ID, "AC Milan"),
-    ...allClubs.map(c => fetchClubPlayers(c.id, `${c.name} · ${c.league}`)),
+  console.log(`Found ${allClubs.length} clubs across ${TOP_LEAGUES.length} leagues.`);
+  console.log("Phase 2: fetching club squads…");
+
+  const [milanData, ...marketGroups] = await Promise.all([
+    tmFetch(`/clubs/${MILAN_ID}/players`),
+    ...await (async () => {
+      // Batch club squad fetches to avoid rate limiting
+      const groups = [];
+      for (let i = 0; i < allClubs.length; i += 25) {
+        const chunk = allClubs.slice(i, i + 25);
+        const results = await Promise.all(
+          chunk.map(c => fetchClubPlayers(c.id, `${c.name} · ${c.league}`))
+        );
+        groups.push(...results);
+        if (i + 25 < allClubs.length) await sleep(500);
+        process.stdout.write(`\r  ${Math.min(i + 25, allClubs.length)}/${allClubs.length}`);
+      }
+      process.stdout.write("\n");
+      return groups;
+    })(),
   ]);
 
-  // Build exclusion set from Milan squad names
+  const milanPlayers = (milanData?.players || []).map(p => mapPlayer(p, "AC Milan"));
   const milanNames = new Set(milanPlayers.map(p => p.name.toLowerCase()));
 
-  // Deduplicate market pool by TM id, exclude Milan players, require value ≥ 3M
   const marketMap = new Map();
   for (const group of marketGroups) {
     for (const p of group) {
@@ -206,11 +242,16 @@ export async function onRequestGet({ env }) {
   }
 
   const market = [...marketMap.values()].sort((a, b) => b.value - a.value);
+  const result = {
+    generated: new Date().toISOString(),
+    squad: milanPlayers,
+    market,
+    clubs: allClubs.length,
+  };
 
-  const result = { squad: milanPlayers, market, clubs: allClubs.length };
-  await env.VOTES.put(CACHE_KEY, JSON.stringify(result), { expirationTtl: CACHE_TTL });
-
-  return Response.json(result, {
-    headers: { "Cache-Control": "public, max-age=3600" },
-  });
+  fs.writeFileSync(OUT, JSON.stringify(result));
+  console.log(`\nDone! ${market.length} market players · ${milanPlayers.length} Milan squad`);
+  console.log(`Written to: ${OUT}`);
 }
+
+main().catch(err => { console.error(err); process.exit(1); });
