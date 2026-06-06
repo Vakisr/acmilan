@@ -1,30 +1,30 @@
 const TM_BASE = "https://transfermarkt-api.fly.dev";
 const MILAN_ID = "5";
-const CACHE_KEY = "tm:players:v2";
+const CACHE_KEY = "tm:players:v3";
 const CACHE_TTL = 60 * 60 * 24; // 24 hours
 
-// Top 20 leagues — competition IDs and how many clubs to pull from each
+// Top 20 leagues — all clubs fetched so no player gets missed (e.g. Karetsas at Genk)
 const TOP_LEAGUES = [
-  { id: "GB1",  name: "Premier League",      topN: 8 },
-  { id: "ES1",  name: "La Liga",             topN: 6 },
-  { id: "L1",   name: "Bundesliga",          topN: 6 },
-  { id: "IT1",  name: "Serie A",             topN: 6 },
-  { id: "FR1",  name: "Ligue 1",             topN: 5 },
-  { id: "PO1",  name: "Primeira Liga",       topN: 4 },
-  { id: "NL1",  name: "Eredivisie",          topN: 4 },
-  { id: "TR1",  name: "Süper Lig",           topN: 4 },
-  { id: "SA1",  name: "Saudi Pro League",    topN: 4 },
-  { id: "BE1",  name: "Belgian Pro League",  topN: 3 },
-  { id: "SC1",  name: "Scottish Prem",       topN: 2 },
-  { id: "BRA1", name: "Brasileirão",         topN: 4 },
-  { id: "ARPR", name: "Argentine Primera",   topN: 3 },
-  { id: "MLS1", name: "MLS",                topN: 4 },
-  { id: "MEXA", name: "Liga MX",            topN: 3 },
-  { id: "A1",   name: "Austrian Bundesliga", topN: 3 },
-  { id: "JAP1", name: "J1 League",           topN: 3 },
-  { id: "GR1",  name: "Super League Greece", topN: 2 },
-  { id: "UKR1", name: "Ukrainian Premier",   topN: 2 },
-  { id: "KOR1", name: "K League 1",          topN: 2 },
+  { id: "GB1",  name: "Premier League"      },
+  { id: "ES1",  name: "La Liga"             },
+  { id: "L1",   name: "Bundesliga"          },
+  { id: "IT1",  name: "Serie A"             },
+  { id: "FR1",  name: "Ligue 1"             },
+  { id: "PO1",  name: "Primeira Liga"       },
+  { id: "NL1",  name: "Eredivisie"          },
+  { id: "TR1",  name: "Süper Lig"           },
+  { id: "SA1",  name: "Saudi Pro League"    },
+  { id: "BE1",  name: "Belgian Pro League"  },
+  { id: "SC1",  name: "Scottish Prem"       },
+  { id: "BRA1", name: "Brasileirão"         },
+  { id: "ARPR", name: "Argentine Primera"   },
+  { id: "MLS1", name: "MLS"                 },
+  { id: "MEXA", name: "Liga MX"             },
+  { id: "A1",   name: "Austrian Bundesliga" },
+  { id: "JAP1", name: "J1 League"           },
+  { id: "GR1",  name: "Super League Greece" },
+  { id: "UKR1", name: "Ukrainian Premier"   },
+  { id: "KOR1", name: "K League 1"          },
 ];
 
 const TM_ROLES = {
@@ -155,10 +155,10 @@ async function fetchClubPlayers(clubId, clubName) {
   return (data.players || []).map(p => mapPlayer(p, clubName));
 }
 
-async function fetchLeagueClubs(leagueId, topN) {
+async function fetchLeagueClubs(leagueId) {
   const data = await tmFetch(`/competitions/${leagueId}/clubs`);
   if (!data || !Array.isArray(data.clubs)) return [];
-  return data.clubs.slice(0, topN).map(c => ({ id: c.id, name: c.name }));
+  return data.clubs.map(c => ({ id: c.id, name: c.name }));
 }
 
 export async function onRequestGet({ env }) {
@@ -172,7 +172,7 @@ export async function onRequestGet({ env }) {
 
   // Phase 1: fetch all league club lists in parallel
   const leagueClubLists = await Promise.all(
-    TOP_LEAGUES.map(l => fetchLeagueClubs(l.id, l.topN).then(clubs => ({ league: l.name, clubs })))
+    TOP_LEAGUES.map(l => fetchLeagueClubs(l.id).then(clubs => ({ league: l.name, clubs })))
   );
 
   // Phase 2: collect unique club IDs to fetch (excluding Milan)
