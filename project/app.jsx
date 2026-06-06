@@ -9,11 +9,9 @@ const VOTE_WEIGHT = 1;
 const BASE_CONTRIB = 14207;
 const buyHype = (p) => Math.round(p.value * 90) + 1200;
 
-/* Supabase config — paste your project URL and anon key from supabase.com > Settings > API */
-const SUPA_URL = "https://YOUR_PROJECT_ID.supabase.co";
-const SUPA_KEY = "YOUR_ANON_KEY";
-const SUPA_H = { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` };
-const SUPA_READY = SUPA_URL !== "https://YOUR_PROJECT_ID.supabase.co";
+/* Firebase Realtime Database — paste your database URL from the Firebase console */
+const FB_URL = "https://YOUR_PROJECT-default-rtdb.firebaseio.com";
+const FB_READY = FB_URL !== "https://YOUR_PROJECT-default-rtdb.firebaseio.com";
 
 /* Seed coach vote counts so they start from realistic numbers even before real votes accumulate */
 const SEED_COACHES = { slot: 9120, glasner: 11890, pochettino: 8500, jaissle: 6200 };
@@ -90,26 +88,26 @@ function App(){
   /* Dynamic buy pool — starts static, replaced by players.json market data when available */
   const [allBuy, setAllBuy] = uS([...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY]);
 
-  /* Fetch votes from Supabase + player data from static JSON once on mount */
+  /* Fetch votes from Firebase + player data from static JSON once on mount */
   uE(() => {
-    if (SUPA_READY) {
+    if (FB_READY) {
       Promise.all([
-        fetch(`${SUPA_URL}/rest/v1/player_votes?select=player_id,session_id`, { headers: SUPA_H })
-          .then(r => r.ok ? r.json() : []),
-        fetch(`${SUPA_URL}/rest/v1/coach_votes?select=coach_id,session_id`, { headers: SUPA_H })
-          .then(r => r.ok ? r.json() : []),
+        fetch(`${FB_URL}/player_votes.json`).then(r => r.ok ? r.json() : null),
+        fetch(`${FB_URL}/coach_votes.json`).then(r => r.ok ? r.json() : null),
       ])
-        .then(([pvRows, cvRows]) => {
+        .then(([pvData, cvData]) => {
           const votes = {};
           const sessions = new Set();
-          for (const row of pvRows) {
-            votes[row.player_id] = (votes[row.player_id] || 0) + 1;
-            sessions.add(row.session_id);
+          for (const entry of Object.values(pvData || {})) {
+            if (!entry || !entry.player_id) continue;
+            votes[entry.player_id] = (votes[entry.player_id] || 0) + 1;
+            sessions.add(entry.session_id);
           }
           const coaches = { ...SEED_COACHES };
-          for (const row of cvRows) {
-            coaches[row.coach_id] = (coaches[row.coach_id] || 0) + 1;
-            sessions.add(row.session_id);
+          for (const entry of Object.values(cvData || {})) {
+            if (!entry || !entry.coach_id) continue;
+            coaches[entry.coach_id] = (coaches[entry.coach_id] || 0) + 1;
+            sessions.add(entry.session_id);
           }
           setServerState({ votes, coaches, contributors: BASE_CONTRIB + sessions.size });
           setApiReady(true);
@@ -187,20 +185,20 @@ function App(){
     return { msg: " · €" + wageOf(p) + "M/yr wages", bad: false };
   };
 
-  /* Fire-and-forget vote to Supabase with session dedup via PRIMARY KEY */
+  /* Fire-and-forget vote to Firebase — session dedup via localStorage myVotes */
   function postVote(type, id){
-    if (!SUPA_READY) return;
-    const table = type === "coach" ? "coach_votes" : "player_votes";
+    if (!FB_READY) return;
+    const path = type === "coach" ? "coach_votes" : "player_votes";
     const body = type === "coach"
       ? { coach_id: id, session_id: SESSION_ID }
       : { player_id: id, session_id: SESSION_ID };
-    fetch(`${SUPA_URL}/rest/v1/${table}`, {
+    fetch(`${FB_URL}/${path}.json`, {
       method: "POST",
-      headers: { ...SUPA_H, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     })
       .then(r => {
-        if (r.ok || r.status === 201) {
+        if (r.ok) {
           setServerState(prev => ({ ...prev, contributors: prev.contributors + 1 }));
           setApiReady(true);
         }
