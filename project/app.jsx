@@ -10,8 +10,8 @@ const BASE_CONTRIB = 14207;
 const buyHype = (p) => Math.round(p.value * 90) + 1200;
 
 /* Firebase Realtime Database — paste your database URL from the Firebase console */
-const FB_URL = "https://YOUR_PROJECT-default-rtdb.firebaseio.com";
-const FB_READY = FB_URL !== "https://YOUR_PROJECT-default-rtdb.firebaseio.com";
+const FB_URL = "https://acmilan-c402b-default-rtdb.europe-west1.firebasedatabase.app";
+const FB_READY = true;
 
 /* Seed coach vote counts so they start from realistic numbers even before real votes accumulate */
 const SEED_COACHES = { slot: 9120, glasner: 11890, pochettino: 8500, jaissle: 6200 };
