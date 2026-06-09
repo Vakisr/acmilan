@@ -148,9 +148,12 @@ function PlayerRow({ p, votesOf, right, flat, sub }){
 }
 
 /* vote button */
-function VoteBtn({ count, voted, onClick }){
+function VoteBtn({ count, voted, onClick, locked, lockedTip }){
   return (
-    <button className={"votebtn" + (voted ? " voted" : "")} onClick={onClick}>
+    <button className={"votebtn" + (voted ? " voted" : "") + (locked ? " locked" : "")}
+      onClick={locked ? undefined : onClick}
+      title={locked ? lockedTip : undefined}
+      disabled={!!locked}>
       <Icon.up />
       <span className="vc">{fmtNum(count)}</span>
     </button>

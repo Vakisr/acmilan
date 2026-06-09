@@ -206,10 +206,12 @@ function App(){
   }
 
   // ---- handlers ----
+  const squadValid = budget >= 0 && ownedIds.length <= 30;
+
   const onVotePlayer = (id) => {
     setMyVotes(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
     markContributed();
-    postVote("player", id);
+    if (squadValid) postVote("player", id);
   };
 
   const onVoteCoach = (id) => {
@@ -309,7 +311,7 @@ function App(){
           peopleSquad={M.SQUAD} mySquad={owned}
           coaches={sortedCoach} communityCoach={communityCoach}
           myCoach={myCoach} onVoteCoach={onVoteCoach}
-          votesOf={votesOf} myVotes={myVotes} onVotePlayer={onVotePlayer}
+          votesOf={votesOf} myVotes={myVotes} onVotePlayer={onVotePlayer} squadValid={squadValid}
           myLineup={myLineup} onStart={onStart}
           onBuy={onBuy} onPromote={onPromote} onSell={onSell} ownedIds={ownedIds} budget={budget}
           contributors={contributors} contributed={contributed} apiReady={apiReady}
@@ -318,7 +320,7 @@ function App(){
         />
       )}
       {tab === "mercato" && (
-        <Mercato ownedIds={ownedIds} budget={budget} squadSize={owned.length} onBuy={onBuy} onPromote={onPromote} allBuy={allBuy} />
+        <Mercato ownedIds={ownedIds} budget={budget} squadSize={owned.length} onBuy={onBuy} onPromote={onPromote} allBuy={allBuy} goSquad={()=>setTab("squad")} />
       )}
       {tab === "squad" && (
         <SquadView owned={owned} budget={budget} squadValue={squadValue} votesOf={votesOf} onSell={onSell} onReset={resetAll} />

@@ -14,7 +14,7 @@ function SubTok({ p, onClick }){
 function Pitch(props){
   const {
     mode, setMode, peopleSquad, mySquad, coaches, communityCoach, myCoach, onVoteCoach,
-    votesOf, myVotes, onVotePlayer, myLineup, onStart, onBuy, onPromote, onSell, ownedIds, budget,
+    votesOf, myVotes, onVotePlayer, squadValid, myLineup, onStart, onBuy, onPromote, onSell, ownedIds, budget,
     contributors, contributed, apiReady, onShare, sharedView, onClaimShared, goMercato, allBuy,
   } = props;
 
@@ -193,7 +193,8 @@ function Pitch(props){
                           </button>
                           <button className="btn btn-sell" onClick={()=>onSell(p)}>Sell €{p.value}M</button>
                         </div>
-                      : <VoteBtn count={votesOf(p)} voted={myVotes.has(p.id)} onClick={()=>onVotePlayer(p.id)} />
+                      : <VoteBtn count={votesOf(p)} voted={myVotes.has(p.id)} onClick={()=>onVotePlayer(p.id)}
+                          locked={!squadValid} lockedTip="Fix your squad budget to register votes" />
                     }/>
                 ))}
                 {ownedCands.length===0 && !isMine && (

@@ -24,7 +24,7 @@ const POSF = [
 const POS_ROLES = Object.fromEntries(POSF.map(f => [f.k, f.roles]));
 
 function Mercato(props){
-  const { ownedIds, budget, onBuy, onPromote, squadSize, allBuy } = props;
+  const { ownedIds, budget, onBuy, onPromote, squadSize, allBuy, goSquad } = props;
   const buyPool = allBuy || [...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY];
   const [cat, setCat] = React.useState("all");
   const [pos, setPos] = React.useState("ALL");
@@ -85,6 +85,12 @@ function Mercato(props){
       </div>
 
       <div className="section-lab">{fmtNum(list.length)} player{list.length!==1?"s":""} available</div>
+      {!list.some(p => p.tags.indexOf("academy") !== -1 || p.value <= budget) && list.length > 0 && (
+        <div className="budget-hint">
+          <span>Your war chest is €{budget}M — not enough to sign anyone here.</span>
+          <button onClick={goSquad}>Sell players →</button>
+        </div>
+      )}
       <div className="mlist">
         {shown.map(p => {
           const academy = p.tags.indexOf("academy") !== -1;
@@ -95,7 +101,9 @@ function Mercato(props){
               right={
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
                   <div className="pval"><div className="v">{fmtMoney(p.value)}</div><div className="vl">{academy?"promote":"value"}</div></div>
-                  <button className={"btn " + (academy?"btn-promote":"btn-buy")} disabled={tooDear} onClick={()=>act(p)}>
+                  <button className={"btn " + (academy?"btn-promote":"btn-buy")} disabled={tooDear}
+                    title={tooDear ? "Sell players in Squad to raise your war chest" : undefined}
+                    onClick={()=>act(p)}>
                     {tooDear ? "—" : (academy ? "Promote" : (p.value===0?"Free":"Sign"))}
                   </button>
                 </div>
