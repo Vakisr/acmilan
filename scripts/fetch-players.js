@@ -91,6 +91,9 @@ const NAT_CODE = {
 
 function parseTMValue(v) {
   if (!v || v === "-" || v === "€-") return 0;
+  // API returns raw euros as integers (e.g. 80000000 = €80M)
+  if (typeof v === "number") return Math.round(v / 100000) / 10;
+  // Legacy string format fallback: "€25.00m", "€500k"
   const s = String(v).replace(/,/g, ".");
   const m = s.match(/([\d.]+)\s*(bn|bil|m|k)/i);
   if (!m) return 0;
