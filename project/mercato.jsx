@@ -2,6 +2,7 @@
 
 const CATS = [
   { k:"all", label:"All" },
+  { k:"affordable", label:"Affordable" },
   { k:"target", label:"Targets" },
   { k:"relegated", label:"Relegation" },
   { k:"prospect", label:"Prospects" },
@@ -32,7 +33,8 @@ function Mercato(props){
   const has = (id) => ownedIds.includes(id);
 
   let list = buyPool.filter(p => !has(p.id));
-  if (cat === "target") list = list.filter(p => M.MARKET.some(t => t.id === p.id));
+  if (cat === "affordable") list = list.filter(p => p.tags.indexOf("academy") !== -1 || p.value <= budget);
+  else if (cat === "target") list = list.filter(p => M.MARKET.some(t => t.id === p.id));
   else if (cat !== "all") list = list.filter(p => p.tags.indexOf(cat) !== -1);
   if (pos !== "ALL") {
     const rs = POS_ROLES[pos];

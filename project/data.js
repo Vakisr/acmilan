@@ -275,7 +275,7 @@
   ];
 
   // ---- Starting budget & salary cap -------------------------------
-  const START_BUDGET = 20;   // €M transfer kitty; grows with sales
+  const START_BUDGET = 150;  // €M transfer kitty; grows with sales
   const WAGE_CAP = 110;      // €M gross/year — Milan's wage ceiling for this exercise
 
   // ---- Squad economics: gross annual wage (€M), EU eligibility, homegrown ----
