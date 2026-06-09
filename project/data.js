@@ -206,6 +206,7 @@
     P({ name: "Hugo Larsson", short: "Larsson", num: 16, nat: "SWE", age: 21, pos: "MF", roles: ["RCM", "LCM", "CM"], value: 42, from: "Eintracht Frankfurt", tags: ["prospect"] }),
     // Defenders
     P({ name: "Radu Drăgușin", short: "Drăgușin", num: 6, nat: "ROU", age: 24, pos: "DF", roles: ["CB", "RCB", "LCB"], value: 25, from: "Tottenham" }),
+    P({ name: "Ousmane Diomandé", short: "Diomandé", num: 3, nat: "CIV", age: 22, pos: "DF", roles: ["CB", "RCB", "LCB"], value: 45, from: "Sporting CP", tags: ["prospect"], note: "Milan's defensive priority. €80M release clause." }),
     P({ name: "David Affengruber", short: "Affengruber", num: 4, nat: "AUT", age: 25, pos: "DF", roles: ["CB", "RCB", "LCB"], value: 20, from: "Elche" }),
     P({ name: "Lorenzo Pirola", short: "Pirola", num: 29, nat: "ITA", age: 24, pos: "DF", roles: ["CB", "LCB"], value: 15, from: "Sassuolo" }),
     P({ name: "Gerard Martín", short: "G. Martín", num: 26, nat: "ESP", age: 23, pos: "DF", roles: ["LB", "LWB", "LCB"], value: 18, from: "Barcelona" }),
