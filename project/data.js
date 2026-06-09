@@ -159,6 +159,7 @@
     P({ name: "Alexis Saelemaekers", short: "Saelemaekers", num: 56, nat: "BEL", age: 26, pos: "DF", roles: ["RB", "RWB", "RW"], value: 22, votes: 5400 }),
     P({ name: "Zachary Athekame", short: "Athekame", num: 24, nat: "SUI", age: 21, pos: "DF", roles: ["RB", "RWB"], value: 10, votes: 1900 }),
     P({ name: "Filippo Terracciano", short: "F. Terracciano", num: 42, nat: "ITA", age: 23, pos: "DF", roles: ["RB", "RWB", "RCB"], value: 6, votes: 700 }),
+    P({ name: "Koni De Winter", short: "De Winter", num: 5, nat: "BEL", age: 23, pos: "DF", roles: ["CB", "RCB", "LCB", "RB"], value: 20, votes: 3800 }),
     // -- Midfielders
     P({ name: "Youssouf Fofana", short: "Fofana", num: 29, nat: "FRA", age: 27, pos: "MF", roles: ["DM", "LCM", "RCM", "CM"], value: 25, votes: 6600 }),
     P({ name: "Ismaël Bennacer", short: "Bennacer", num: 4, nat: "ALG", age: 28, pos: "MF", roles: ["DM", "RCM", "LCM", "CM"], value: 22, votes: 4100, note: "Back from his Marseille loan." }),
@@ -286,6 +287,7 @@
     Tomori:{wage:4.2,eu:false},        Pavlović:{wage:2.6,eu:true},        Gabbia:{wage:1.8,eu:true,hg:"club"},
     Pellegrino:{wage:0.7,eu:true},     Estupiñán:{wage:2.4,eu:false},      Bartesaghi:{wage:0.5,eu:true,hg:"club"},
     Saelemaekers:{wage:2.2,eu:true,hg:"assoc"}, Athekame:{wage:0.9,eu:true}, "F. Terracciano":{wage:0.5,eu:true,hg:"assoc"},
+    "De Winter":{wage:2.2,eu:true},
     Fofana:{wage:3.0,eu:true},         Bennacer:{wage:4.0,eu:true,hg:"club"}, "Loftus-Cheek":{wage:4.5,eu:false},
     Modrić:{wage:3.5,eu:true},         Jashari:{wage:2.2,eu:true},         Rabiot:{wage:4.0,eu:true},
     Bondo:{wage:0.9,eu:true},          Musah:{wage:2.0,eu:false},          Zeroli:{wage:0.5,eu:true,hg:"club"},
