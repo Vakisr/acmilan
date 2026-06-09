@@ -134,7 +134,11 @@ function App(){
         for (const p of (data.market || [])) enriched[p.id] = p;
         setLiveIndex(enriched);
         if (data.market && data.market.length > 0) {
-          setAllBuy([...M.MARKET, ...data.market, ...M.RELEGATED, ...M.ACADEMY]);
+          // Curated static entries win over generated tm: entries — dedupe by name
+          const staticPool = [...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY];
+          const staticNames = new Set(staticPool.map(p => p.name.toLowerCase()));
+          const freshMarket = data.market.filter(p => !staticNames.has(p.name.toLowerCase()));
+          setAllBuy([...staticPool, ...freshMarket]);
         }
       })
       .catch(() => {});
