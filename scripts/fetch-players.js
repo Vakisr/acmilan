@@ -211,37 +211,39 @@ async function main() {
 
   const allClubs = [...clubMap.values()];
   console.log(`Found ${allClubs.length} clubs across ${TOP_LEAGUES.length} leagues.`);
-  console.log("Phase 2: fetching club squads…");
 
-  const [milanData, ...marketGroups] = await Promise.all([
-    tmFetch(`/clubs/${MILAN_ID}/players`),
-    ...await (async () => {
-      // Batch club squad fetches to avoid rate limiting
-      const groups = [];
-      for (let i = 0; i < allClubs.length; i += 25) {
-        const chunk = allClubs.slice(i, i + 25);
-        const results = await Promise.all(
-          chunk.map(c => fetchClubPlayers(c.id, `${c.name} · ${c.league}`))
-        );
-        groups.push(...results);
-        if (i + 25 < allClubs.length) await sleep(500);
-        process.stdout.write(`\r  ${Math.min(i + 25, allClubs.length)}/${allClubs.length}`);
-      }
-      process.stdout.write("\n");
-      return groups;
-    })(),
-  ]);
-
-  const milanPlayers = (milanData?.players || []).map(p => mapPlayer(p, "AC Milan"));
+  // Fetch squads in small batches with generous delays to avoid rate-limiting
+  console.log("Phase 2: fetching club squads (batch 10, 1s delay)…");
+  const BATCH = 10;
+  const DELAY = 1000;
+  const milanPlayers = await tmFetch(`/clubs/${MILAN_ID}/players`)
+    .then(d => (d?.players || []).map(p => mapPlayer(p, "AC Milan")));
   const milanNames = new Set(milanPlayers.map(p => p.name.toLowerCase()));
 
+  // First pass
+  const rawGroups = await batch(allClubs, c => fetchClubPlayers(c.id, `${c.name} · ${c.league}`), BATCH, DELAY);
+  const failedClubs = allClubs.filter((_, i) => rawGroups[i].length === 0);
+
+  // Retry failed clubs once with a longer delay
+  let retryGroups = [];
+  if (failedClubs.length > 0) {
+    console.log(`Retrying ${failedClubs.length} clubs that returned empty…`);
+    await sleep(3000);
+    retryGroups = await batch(failedClubs, c => fetchClubPlayers(c.id, `${c.name} · ${c.league}`), BATCH, 1500);
+    const recovered = retryGroups.filter(g => g.length > 0).length;
+    console.log(`Recovered ${recovered} clubs on retry.`);
+  }
+
   const marketMap = new Map();
-  for (const group of marketGroups) {
+  const addGroup = (group) => {
     for (const p of group) {
       if (milanNames.has(p.name.toLowerCase())) continue;
       if (p.value < 3) continue;
       if (!marketMap.has(p.id)) marketMap.set(p.id, p);
     }
+  };
+  rawGroups.forEach(addGroup);
+  retryGroups.forEach(addGroup);
   }
 
   const market = [...marketMap.values()].sort((a, b) => b.value - a.value);
