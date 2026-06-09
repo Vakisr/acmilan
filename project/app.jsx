@@ -134,10 +134,11 @@ function App(){
         for (const p of (data.market || [])) enriched[p.id] = p;
         setLiveIndex(enriched);
         if (data.market && data.market.length > 0) {
-          // Curated static entries win over generated tm: entries — dedupe by name
+          // Curated static entries win over generated tm: entries — dedupe by accent-normalised name
+          const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
           const staticPool = [...M.MARKET, ...M.WORLD, ...M.RELEGATED, ...M.ACADEMY];
-          const staticNames = new Set(staticPool.map(p => p.name.toLowerCase()));
-          const freshMarket = data.market.filter(p => !staticNames.has(p.name.toLowerCase()));
+          const staticNames = new Set(staticPool.map(p => norm(p.name)));
+          const freshMarket = data.market.filter(p => !staticNames.has(norm(p.name)));
           setAllBuy([...staticPool, ...freshMarket]);
         }
       })
