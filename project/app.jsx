@@ -91,16 +91,18 @@ function App(){
   uE(() => {
     if (FB_READY) {
       Promise.all([
-        fetch(`${FB_URL}/player_votes.json`).then(r => r.ok ? r.json() : null),
+        fetch(`${FB_URL}/lineup_votes.json`).then(r => r.ok ? r.json() : null),
         fetch(`${FB_URL}/coach_votes.json`).then(r => r.ok ? r.json() : null),
       ])
-        .then(([pvData, cvData]) => {
+        .then(([lvData, cvData]) => {
           const votes = {};
           const sessions = new Set();
-          for (const entry of Object.values(pvData || {})) {
-            if (!entry || !entry.player_id) continue;
-            votes[entry.player_id] = (votes[entry.player_id] || 0) + 1;
+          for (const entry of Object.values(lvData || {})) {
+            if (!entry?.lineup) continue;
             sessions.add(entry.session_id);
+            for (const pid of Object.values(entry.lineup)) {
+              if (pid) votes[pid] = (votes[pid] || 0) + 1;
+            }
           }
           const coaches = { ...SEED_COACHES };
           for (const entry of Object.values(cvData || {})) {
@@ -189,42 +191,51 @@ function App(){
     return { msg: " · €" + wageOf(p) + "M/yr wages", bad: false };
   };
 
-  /* Fire-and-forget vote to Firebase — session dedup via localStorage myVotes */
-  function postVote(type, id){
+  function postCoachVote(coachId){
     if (!FB_READY) return;
-    const path = type === "coach" ? "coach_votes" : "player_votes";
-    const body = type === "coach"
-      ? { coach_id: id, session_id: SESSION_ID }
-      : { player_id: id, session_id: SESSION_ID };
-    fetch(`${FB_URL}/${path}.json`, {
+    fetch(`${FB_URL}/coach_votes.json`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-      .then(r => {
-        if (r.ok) {
-          setServerState(prev => ({ ...prev, contributors: prev.contributors + 1 }));
-          setApiReady(true);
-        }
-      })
-      .catch(() => {});
+      body: JSON.stringify({ coach_id: coachId, session_id: SESSION_ID }),
+    }).catch(() => {});
   }
 
   // ---- handlers ----
-  const squadValid = budget >= 0 && ownedIds.length <= 30;
-
-  const onVotePlayer = (id) => {
-    setMyVotes(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-    markContributed();
-    if (squadValid) postVote("player", id);
-  };
-
   const onVoteCoach = (id) => {
     setMyCoach(() => id);
     setMode("mine");
     markContributed();
     flash("Lined up in " + M.FORMATIONS[id].name);
-    postVote("coach", id);
+    postCoachVote(id);
+  };
+
+  const onVoteLineup = () => {
+    const coachId = myCoach || communityCoach;
+    const formation = M.FORMATIONS[coachId];
+    const lineup = myLineup[coachId] || {};
+    const filled = formation.slots.filter(s => lineup[s.id]).length;
+    if (filled < formation.slots.length) {
+      flash("Fill all " + formation.slots.length + " positions first", true); return;
+    }
+    if (budget < 0) { flash("Fix your squad budget before voting", true); return; }
+    if (!FB_READY) return;
+    fetch(`${FB_URL}/lineup_votes.json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: SESSION_ID, coach_id: coachId, lineup }),
+    }).then(r => {
+      if (r.ok) {
+        const submitted = new Set(Object.values(lineup).filter(Boolean));
+        setMyVotes(submitted);
+        markContributed();
+        flash("Your XI is in the vote! ✓");
+        setServerState(prev => {
+          const newVotes = { ...prev.votes };
+          for (const pid of submitted) newVotes[pid] = (newVotes[pid] || 0) + 1;
+          return { ...prev, votes: newVotes, contributors: prev.contributors + 1 };
+        });
+      }
+    }).catch(() => {});
   };
 
   const onBuy = (p) => {
@@ -316,7 +327,7 @@ function App(){
           peopleSquad={M.SQUAD} mySquad={owned}
           coaches={sortedCoach} communityCoach={communityCoach}
           myCoach={myCoach} onVoteCoach={onVoteCoach}
-          votesOf={votesOf} myVotes={myVotes} onVotePlayer={onVotePlayer} squadValid={squadValid}
+          votesOf={votesOf} myVotes={myVotes} onVoteLineup={onVoteLineup}
           myLineup={myLineup} onStart={onStart}
           onBuy={onBuy} onPromote={onPromote} onSell={onSell} ownedIds={ownedIds} budget={budget}
           contributors={contributors} contributed={contributed} apiReady={apiReady}

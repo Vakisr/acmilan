@@ -572,8 +572,18 @@ img{ display:block; }
    ================================================================= */
 .sharebar{ margin:8px 14px 4px; display:flex; gap:9px; }
 .sharebar .btn{ flex:1; }
-.btn-share{ background:var(--bianco); color:#111; }
+.btn-share{ background:var(--nero-3); color:var(--bianco); border:1px solid var(--linea); }
 .btn-share svg{ width:15px; height:15px; }
+.btn-vote{ background:var(--rosso); color:#fff; font-weight:700; }
+.btn-vote svg{ width:14px; height:14px; }
+.pickcount{
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  background:var(--nero-3); border:1px solid var(--linea); border-radius:10px;
+  padding:5px 9px; min-width:48px;
+}
+.pickcount svg{ width:14px; height:14px; color:var(--fumo); }
+.pickcount span{ font-family:var(--ff-display); font-size:14px; line-height:1; }
+.pickcount small{ font-size:9px; color:var(--fumo); letter-spacing:.5px; text-transform:uppercase; }
 
 .budget-hint{
   margin:0 14px 10px; padding:9px 12px; border-radius:11px;

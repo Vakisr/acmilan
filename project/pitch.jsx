@@ -14,7 +14,7 @@ function SubTok({ p, onClick }){
 function Pitch(props){
   const {
     mode, setMode, peopleSquad, mySquad, coaches, communityCoach, myCoach, onVoteCoach,
-    votesOf, myVotes, onVotePlayer, squadValid, myLineup, onStart, onBuy, onPromote, onSell, ownedIds, budget,
+    votesOf, myVotes, onVoteLineup, myLineup, onStart, onBuy, onPromote, onSell, ownedIds, budget,
     contributors, contributed, apiReady, onShare, sharedView, onClaimShared, goMercato, allBuy,
   } = props;
 
@@ -148,16 +148,16 @@ function Pitch(props){
           <span className="pulse"/>
           <div>
             <div className="big">{fmtNum(contributors)}</div>
-            <div className="sub">Rossoneri picking the team{apiReady ? " · live" : ""}</div>
+            <div className="sub">Rossoneri submitted their XI{apiReady ? " · live" : ""}</div>
           </div>
-          <div className="you">{contributed ? "You're in ✓" : "Vote to join"}</div>
+          <div className="you">{contributed ? "Voted ✓" : "Build your XI"}</div>
         </div>
 
         {/* share (my XI) */}
         {isMine && (
           <div className="sharebar">
-            <button className="btn btn-share" onClick={onShare}><Icon.share/> Share my XI</button>
-            <button className="btn btn-ghost" onClick={goMercato}>Open Mercato</button>
+            <button className="btn btn-vote" onClick={onVoteLineup}><Icon.up/> Vote for this XI</button>
+            <button className="btn btn-share" onClick={onShare}><Icon.share/> Share</button>
           </div>
         )}
         {sharedView && (
@@ -193,8 +193,7 @@ function Pitch(props){
                           </button>
                           <button className="btn btn-sell" onClick={()=>onSell(p)}>Sell €{p.value}M</button>
                         </div>
-                      : <VoteBtn count={votesOf(p)} voted={myVotes.has(p.id)} onClick={()=>onVotePlayer(p.id)}
-                          locked={!squadValid} lockedTip="Fix your squad budget to register votes" />
+                      : <div className="pickcount"><Icon.up/><span>{fmtNum(votesOf(p))}</span><small>picks</small></div>
                     }/>
                 ))}
                 {ownedCands.length===0 && !isMine && (
