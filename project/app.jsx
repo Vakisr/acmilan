@@ -6,7 +6,7 @@ const INDEX_STATIC = Object.fromEntries(ALL_STATIC.map(p => [p.id, p]));
 const SQUAD_IDS = M.SQUAD.map(p => p.id);
 const STORE = "milan-transfer-dreams-v4";
 const VOTE_WEIGHT = 1;
-const BASE_CONTRIB = 14207;
+const BASE_CONTRIB = 0;
 const buyHype = (p) => Math.round(p.value * 90) + 1200;
 
 /* Firebase Realtime Database — paste your database URL from the Firebase console */
@@ -14,7 +14,7 @@ const FB_URL = "https://acmilan-c402b-default-rtdb.europe-west1.firebasedatabase
 const FB_READY = true;
 
 /* Seed coach vote counts so they start from realistic numbers even before real votes accumulate */
-const SEED_COACHES = { slot: 9120, glasner: 11890, pochettino: 8500, jaissle: 6200 };
+const SEED_COACHES = { slot: 0, glasner: 0, pochettino: 0, jaissle: 0 };
 
 function load(){
   try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch(e){ return {}; }
@@ -75,7 +75,6 @@ function App(){
   const [toast, setToast] = uS(null);
   const toastT = React.useRef(null);
 
-  /* Vote state — seeded with realistic base numbers, real Supabase counts added on top */
   const [serverState, setServerState] = uS({
     votes: {},
     coaches: { ...SEED_COACHES },
@@ -151,19 +150,19 @@ function App(){
   const owned = uM(() => ownedIds.map(id => liveIndex[id]).filter(Boolean), [ownedIds, liveIndex]);
   const squadValue = owned.reduce((s,p)=> s + p.value, 0);
 
-  /* votesOf: server tally is source of truth; seeds (buy hype) override; +1 optimistic for own vote */
+  /* votesOf: Firebase count is source of truth once live; seeds (buy hype) override locally */
   const votesOf = uC((p) => {
     const server = serverState.votes[p.id];
-    const base = seeds[p.id] != null ? seeds[p.id] : (server != null ? server : p.votes);
+    const base = seeds[p.id] != null ? seeds[p.id] : (server != null ? server : (apiReady ? 0 : p.votes));
     return base + (myVotes.has(p.id) ? VOTE_WEIGHT : 0);
-  }, [seeds, myVotes, serverState]);
+  }, [seeds, myVotes, serverState, apiReady]);
 
   const coaches = M.COACHES.map(c => ({
     ...c,
     liveVotes: (serverState.coaches[c.id] ?? c.votes) + (myCoach === c.id ? VOTE_WEIGHT : 0),
   }));
   const sortedCoach = [...coaches].sort((a,b)=> b.liveVotes - a.liveVotes);
-  const communityCoach = sortedCoach[0].id;
+  const communityCoach = (sortedCoach.find(c => !c.ruledOut) || sortedCoach[0]).id;
 
   const contributors = apiReady ? serverState.contributors : BASE_CONTRIB + (contributed ? 1 : 0);
 

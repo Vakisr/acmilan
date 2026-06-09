@@ -75,10 +75,13 @@ function Pitch(props){
         {/* coach */}
         <div className="coachbar">
           {coaches.map(c => {
-            const pct = totalCoachVotes ? Math.round(c.liveVotes/totalCoachVotes*100) : 50;
+            const pct = totalCoachVotes ? Math.round(c.liveVotes/totalCoachVotes*100) : 0;
             const on = c.id === coachId;
             return (
-              <button key={c.id} className={"coachpick" + (on ? " on" : "")} onClick={()=>onVoteCoach(c.id)}>
+              <button key={c.id}
+                className={"coachpick" + (on ? " on" : "") + (c.ruledOut ? " ruled-out" : "")}
+                onClick={c.ruledOut ? undefined : ()=>onVoteCoach(c.id)}
+                disabled={!!c.ruledOut}>
                 <div className="role">{c.from} · {c.nat}</div>
                 <div className="cname">{c.name}</div>
                 <div className="shape">{c.shape}</div>
@@ -87,8 +90,9 @@ function Pitch(props){
                   <span className="pct">{pct}%</span>
                 </div>
                 <div className="cvotes" style={{marginTop:3}}>
-                  <span>{fmtNum(c.liveVotes)} votes {myCoach===c.id ? "· you ✓" : ""}</span>
+                  <span>{fmtNum(c.liveVotes)} votes</span>
                 </div>
+                {c.ruledOut && <div className="ruled-out-badge">RULED OUT ✕</div>}
               </button>
             );
           })}
