@@ -244,7 +244,6 @@ async function main() {
   };
   rawGroups.forEach(addGroup);
   retryGroups.forEach(addGroup);
-  }
 
   const market = [...marketMap.values()].sort((a, b) => b.value - a.value);
   const result = {
