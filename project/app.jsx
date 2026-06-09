@@ -291,11 +291,13 @@ function App(){
   return (
     <div className="shell">
       <div className="topbar">
-        <Crest/>
-        <div className="brand-txt">
-          <b>Transfer Dreams</b>
-          <span>Build the Diavolo · r/ACMilan</span>
-        </div>
+        <a className="brand-link" href="https://reddit.com/r/ACMilan" target="_blank" rel="noopener noreferrer">
+          <Crest/>
+          <div className="brand-txt">
+            <b>Transfer Dreams</b>
+            <span>Build the Diavolo · r/ACMilan</span>
+          </div>
+        </a>
         <div className={"budget" + (budget<0 ? " neg" : "")} onDoubleClick={resetAll} title="Double-tap to reset">
           <div className="lab">War chest</div>
           <div className="amt">€{budget}<small>M</small></div>

@@ -74,7 +74,9 @@ img{ display:block; }
   background:linear-gradient(180deg,#000 0%, var(--nero) 100%);
   border-bottom:1px solid var(--linea);
 }
-.crest{ width:34px; height:34px; flex:none; }
+.brand-link{ display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; }
+.brand-link:hover .crest{ opacity:.8; }
+.crest{ width:34px; height:34px; flex:none; transition:opacity .15s; }
 .brand-txt{ line-height:.92; }
 .brand-txt b{
   font-family:var(--ff-display); font-size:18px; letter-spacing:.5px;
@@ -101,7 +103,7 @@ img{ display:block; }
 /* =================================================================
    SCROLL AREA + BOTTOM NAV
    ================================================================= */
-.scroll{ flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+.scroll{ flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
 .scroll::-webkit-scrollbar{ width:0; }
 
 .nav{
@@ -611,7 +613,9 @@ img{ display:block; }
 @media(min-width:980px){
   :root{ --shell-max:1060px; }
   body{ background:radial-gradient(circle at 50% -10%, #1a0306 0%, #000 55%); }
-  .shell{ min-height:100dvh; }
+  .shell{ height:100dvh; }
+  /* Shorter aspect ratio so the full field + bench + nav fit without scrolling */
+  .pview .pitch{ aspect-ratio:3/3.0; }
 
   /* pitch view → two columns */
   .pview{
