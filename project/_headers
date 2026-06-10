@@ -1,0 +1,17 @@
+# Always revalidate the app source so deploys take effect immediately.
+# These files are transpiled in-browser, so a stale cache silently ships old code.
+/*.jsx
+  Cache-Control: no-cache
+
+/*.js
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/
+  Cache-Control: no-cache
+
+# players.json refreshes via the weekly Action — keep it fresh too
+/players.json
+  Cache-Control: no-cache
