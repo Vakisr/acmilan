@@ -66,7 +66,7 @@ function App(){
   const [mode, setMode] = uS(shared ? "mine" : (saved.mode || "people"));
   const [sharedView, setSharedView] = uS(!!shared);
   const [ownedIds, setOwnedIds] = uS(init.ownedIds || init.o || SQUAD_IDS.slice());
-  const [budget, setBudget] = uS(init.budget != null ? init.budget : (init.b != null ? init.b : M.START_BUDGET));
+  const [budget, setBudget] = uS(shared ? M.START_BUDGET : (saved.budget != null ? saved.budget : M.START_BUDGET));
   const [seeds, setSeeds] = uS(init.seeds || init.s || {});
   const [myLineup, setMyLineup] = uS(init.myLineup || init.l || {});
   const [myCoach, setMyCoach] = uS(init.myCoach || init.c || (saved.myCoach || null));
@@ -325,7 +325,7 @@ function App(){
         <Pitch
           mode={mode} setMode={setMode}
           peopleSquad={M.SQUAD} mySquad={owned}
-          coaches={sortedCoach} communityCoach={communityCoach}
+          coaches={coaches} communityCoach={communityCoach}
           myCoach={myCoach} onVoteCoach={onVoteCoach}
           votesOf={votesOf} myVotes={myVotes} onVoteLineup={onVoteLineup}
           myLineup={myLineup} onStart={onStart}
