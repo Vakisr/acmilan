@@ -111,7 +111,7 @@
     ["Charles De Ketelaere","BEL",25,"AM",45,"Atalanta"],
     ["Ademola Lookman","NGA",28,"WF",50,"Atalanta"],
     ["Éderson","BRA",27,"CM",50,"Atalanta"],
-    ["Mateo Retegui","ITA",27,"ST",45,"Atalanta"],
+    ["Mateo Retegui","ITA",27,"ST",60,"Al-Qadsiah"],
     ["Marten de Roon","NED",35,"DM",4,"Atalanta"],
     ["Albert Gudmundsson","ISL",28,"AM",30,"Fiorentina"],
     ["David de Gea","ESP",35,"GK",4,"Fiorentina"],

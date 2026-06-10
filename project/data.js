@@ -162,7 +162,8 @@
     P({ name: "Koni De Winter", short: "De Winter", num: 5, nat: "BEL", age: 23, pos: "DF", roles: ["CB", "RCB", "LCB", "RB"], value: 20, votes: 3800 }),
     // -- Midfielders
     P({ name: "Youssouf Fofana", short: "Fofana", num: 29, nat: "FRA", age: 27, pos: "MF", roles: ["DM", "LCM", "RCM", "CM"], value: 25, votes: 6600 }),
-    P({ name: "Ismaël Bennacer", short: "Bennacer", num: 4, nat: "ALG", age: 28, pos: "MF", roles: ["DM", "RCM", "LCM", "CM"], value: 22, votes: 4100, note: "Back from his Marseille loan." }),
+    P({ name: "Samuele Ricci", short: "Ricci", num: 4, nat: "ITA", age: 24, pos: "MF", roles: ["DM", "LCM", "RCM", "CM"], value: 28, votes: 3400, note: "Signed from Torino. The new regista." }),
+    P({ name: "Ismaël Bennacer", short: "Bennacer", num: 6, nat: "ALG", age: 28, pos: "MF", roles: ["DM", "RCM", "LCM", "CM"], value: 12, votes: 4100, note: "Back from his Marseille loan." }),
     P({ name: "Ruben Loftus-Cheek", short: "Loftus-Cheek", num: 8, nat: "ENG", age: 30, pos: "MF", roles: ["RCM", "LCM", "CM", "DM"], value: 16, votes: 3600, note: "Injury-prone but a big-game body." }),
     P({ name: "Luka Modrić", short: "Modrić", num: 14, nat: "CRO", age: 40, pos: "MF", roles: ["LCM", "RCM", "CM"], value: 4, votes: 7800, note: "The maestro. Crowd favourite." }),
     P({ name: "Ardon Jashari", short: "Jashari", num: 19, nat: "SUI", age: 24, pos: "MF", roles: ["LCM", "RCM", "CM", "DM"], value: 28, votes: 5600 }),
@@ -290,6 +291,7 @@
     Saelemaekers:{wage:2.2,eu:true,hg:"assoc"}, Athekame:{wage:0.9,eu:true}, "F. Terracciano":{wage:0.5,eu:true,hg:"assoc"},
     "De Winter":{wage:2.2,eu:true},
     Fofana:{wage:3.0,eu:true},         Bennacer:{wage:4.0,eu:true,hg:"club"}, "Loftus-Cheek":{wage:4.5,eu:false},
+    Ricci:{wage:2.5,eu:true,hg:"assoc"},
     Modrić:{wage:3.5,eu:true},         Jashari:{wage:2.2,eu:true},         Rabiot:{wage:4.0,eu:true},
     Bondo:{wage:0.9,eu:true},          Musah:{wage:2.0,eu:false},          Zeroli:{wage:0.5,eu:true,hg:"club"},
     Leão:{wage:7.0,eu:true},           Pulisic:{wage:5.0,eu:false},        Giménez:{wage:3.5,eu:false},

@@ -79,7 +79,6 @@
     ["Saul Coco","EQG",26,"CB",16,"Torino"],
     ["Guillermo Maripán","CHI",31,"CB",8,"Torino"],
     ["Ivan Ilić","SRB",25,"CM",18,"Torino"],
-    ["Samuele Ricci","ITA",24,"DM",30,"Torino"],
     ["Vanja Milinković-Savić","SRB",29,"GK",18,"Torino"],
     ["Che Adams","SCO",29,"ST",12,"Torino"],
     ["Lorenzo Lucca","ITA",25,"ST",22,"Udinese"],

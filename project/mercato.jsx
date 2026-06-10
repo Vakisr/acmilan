@@ -32,7 +32,10 @@ function Mercato(props){
   const [limit, setLimit] = React.useState(60);
   const has = (id) => ownedIds.includes(id);
 
-  let list = buyPool.filter(p => !has(p.id));
+  // Never let a current Milan squad member show up as a buyable duplicate (e.g. a stale "Ricci · Torino")
+  const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const squadNames = new Set(M.SQUAD.map(p => norm(p.name)));
+  let list = buyPool.filter(p => !has(p.id) && !squadNames.has(norm(p.name)));
   if (cat === "affordable") list = list.filter(p => p.tags.indexOf("academy") !== -1 || p.value <= budget);
   else if (cat === "target") list = list.filter(p => M.MARKET.some(t => t.id === p.id));
   else if (cat !== "all") list = list.filter(p => p.tags.indexOf(cat) !== -1);

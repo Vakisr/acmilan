@@ -142,7 +142,6 @@
     ["Dan Ndoye","SUI",25,"RW",32,"Bologna"],
     ["Sam Beukema","NED",27,"CB",25,"Bologna"],
     ["Jhon Lucumí","COL",28,"CB",22,"Bologna"],
-    ["Samuele Ricci","ITA",24,"DM",30,"Torino"],
     ["Raoul Bellanova","ITA",26,"RB",28,"Torino"],
     ["Duván Zapata","COL",35,"ST",5,"Torino"],
     ["Jaka Bijol","SVN",27,"CB",22,"Udinese"],
