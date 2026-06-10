@@ -60,7 +60,7 @@ function Crest(){
 function App(){
   const shared = readShared();
   const saved = load();
-  const init = shared || saved;
+  const init = shared ? { ...saved, ...shared } : saved;
 
   const [tab, setTab] = uS(saved.tab || "pitch");
   const [mode, setMode] = uS(shared ? "mine" : (saved.mode || "people"));
@@ -277,7 +277,7 @@ function App(){
   };
   const onShare = () => {
     const payload = btoa(unescape(encodeURIComponent(JSON.stringify({
-      o: ownedIds, c: myCoach, l: myLineup, b: budget, s: seeds,
+      o: ownedIds, c: myCoach, l: myLineup, s: seeds,
     }))));
     const url = location.origin + location.pathname + "#team=" + encodeURIComponent(payload);
     try { history.replaceState(null, "", url); } catch(e){}
