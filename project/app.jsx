@@ -167,11 +167,27 @@ function App(){
   const squadValue = owned.reduce((s,p)=> s + p.value, 0);
 
   /* votesOf: Firebase count is source of truth once live; seeds (buy hype) override locally */
+  // My XI ranking: local buy-hype wins so signings slot in; otherwise live aggregate votes
   const votesOf = uC((p) => {
+    if (seeds[p.id] != null) return seeds[p.id];
     const server = serverState.votes[p.id];
-    const base = seeds[p.id] != null ? seeds[p.id] : (server != null ? server : (apiReady ? 0 : p.votes));
-    return base + (myVotes.has(p.id) ? VOTE_WEIGHT : 0);
-  }, [seeds, myVotes, serverState, apiReady]);
+    return server != null ? server : (apiReady ? 0 : p.votes);
+  }, [seeds, serverState, apiReady]);
+
+  // People's XI: pure aggregated lineup votes — no personal buy-hype
+  const peopleVotesOf = uC((p) => {
+    const server = serverState.votes[p.id];
+    return server != null ? server : (apiReady ? 0 : p.votes);
+  }, [serverState, apiReady]);
+
+  // People's XI candidate pool = squad + anyone who's received lineup votes (incl. signings)
+  const peopleSquad = uM(() => {
+    const map = new Map(M.SQUAD.map(p => [p.id, p]));
+    for (const id in serverState.votes) {
+      if (!map.has(id) && liveIndex[id]) map.set(id, liveIndex[id]);
+    }
+    return [...map.values()];
+  }, [serverState.votes, liveIndex]);
 
   const coaches = M.COACHES.map(c => ({
     ...c,
@@ -358,11 +374,11 @@ function App(){
       {tab === "pitch" && (
         <Pitch
           mode={mode} setMode={setMode}
-          peopleSquad={M.SQUAD} mySquad={owned}
+          peopleSquad={peopleSquad} mySquad={owned}
           coaches={coaches} communityCoach={communityCoach}
           myCoach={myCoach} onVoteCoach={onVoteCoach}
           directors={directors} myDirector={myDirector} onVoteDirector={onVoteDirector}
-          votesOf={votesOf} myVotes={myVotes} onVoteLineup={onVoteLineup}
+          votesOf={votesOf} peopleVotesOf={peopleVotesOf} onVoteLineup={onVoteLineup}
           myLineup={myLineup} onStart={onStart}
           onBuy={onBuy} onPromote={onPromote} onSell={onSell} ownedIds={ownedIds} budget={budget}
           contributors={contributors} contributed={contributed} apiReady={apiReady}

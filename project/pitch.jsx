@@ -15,25 +15,27 @@ function Pitch(props){
   const {
     mode, setMode, peopleSquad, mySquad, coaches, communityCoach, myCoach, onVoteCoach,
     directors, myDirector, onVoteDirector,
-    votesOf, myVotes, onVoteLineup, myLineup, onStart, onBuy, onPromote, onSell, ownedIds, budget,
+    votesOf, peopleVotesOf, onVoteLineup, myLineup, onStart, onBuy, onPromote, onSell, ownedIds, budget,
     contributors, contributed, apiReady, onShare, sharedView, onClaimShared, goMercato, allBuy,
   } = props;
 
   const isMine = mode === "mine";
+  // My XI ranks by personal buy-hype; People's XI ranks by aggregated lineup votes
+  const vf = isMine ? votesOf : peopleVotesOf;
   const coachId = isMine ? (myCoach || communityCoach) : communityCoach;
   const formation = M.FORMATIONS[coachId];
   const squad = isMine ? mySquad : peopleSquad;
   const overrides = isMine ? (myLineup[coachId] || {}) : null;
   const xi = isMine
-    ? computeXIOverride(formation, squad, votesOf, overrides)
-    : computeXI(formation, squad, votesOf);
+    ? computeXIOverride(formation, squad, vf, overrides)
+    : computeXI(formation, squad, vf);
   const bench = benchOf(xi, squad);
 
   const [slot, setSlot] = useStateP(null);
   const close = () => setSlot(null);
   const activeSlot = slot ? formation.slots.find(s => s.id === slot) : null;
   const role = activeSlot ? activeSlot.role : null;
-  const ownedCands = activeSlot ? candidatesFor(role, squad, votesOf) : [];
+  const ownedCands = activeSlot ? candidatesFor(role, squad, vf) : [];
   const starterId = activeSlot ? (xi[activeSlot.id] && xi[activeSlot.id].id) : null;
   const signCands = activeSlot
     ? (allBuy || []).filter(p => !ownedIds.includes(p.id) && p.roles.includes(role))
@@ -159,7 +161,7 @@ function Pitch(props){
                       <div className="nm">{p.short}</div>
                       {isMine
                         ? <div className="vchip" style={{background:"rgba(0,0,0,.55)"}}>€{p.value}M</div>
-                        : <div className="vchip"><Icon.up/>{fmtNum(votesOf(p))}</div>}
+                        : <div className="vchip"><Icon.up/>{fmtNum(vf(p))}</div>}
                     </React.Fragment>
                   ) : (
                     <React.Fragment>
@@ -213,7 +215,7 @@ function Pitch(props){
               </div>
               <div className="sheet-list">
                 {ownedCands.map(p => (
-                  <PlayerRow key={p.id} p={p} votesOf={votesOf}
+                  <PlayerRow key={p.id} p={p} votesOf={vf}
                     sub={<span>{p.nat} · {p.age} {p.id===starterId ? "· STARTING" : ""}</span>}
                     right={ isMine
                       ? <div style={{display:"flex",alignItems:"center",gap:7}}>
@@ -223,7 +225,7 @@ function Pitch(props){
                           </button>
                           <button className="btn btn-sell" onClick={()=>onSell(p)}>Sell €{p.value}M</button>
                         </div>
-                      : <div className="pickcount"><Icon.up/><span>{fmtNum(votesOf(p))}</span><small>picks</small></div>
+                      : <div className="pickcount"><Icon.up/><span>{fmtNum(vf(p))}</span><small>picks</small></div>
                     }/>
                 ))}
                 {ownedCands.length===0 && !isMine && (
