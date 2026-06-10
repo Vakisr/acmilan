@@ -100,32 +100,42 @@ function App(){
         fetch(`${FB_URL}/director_votes.json`).then(r => r.ok ? r.json() : null),
       ])
         .then(([lvData, cvData, dvData]) => {
-          /* Entries are keyed by session id (PUT), so each user counts once.
-             Own entries are skipped — local state (myVotes/myCoach/myDirector)
-             supplies them, so switching a pick never double-counts. */
+          /* One vote per user: fold all entries per session_id, last write
+             wins (recovers legacy POST-era push-keyed entries; PUT entries
+             sort after push keys so they take precedence). Own session is
+             skipped — local state (myVotes/myCoach/myDirector) supplies it,
+             so switching a pick never double-counts. */
+          const lastBySession = (data, valid) => {
+            const by = {};
+            for (const entry of Object.values(data || {})) {
+              if (!entry || !entry.session_id || !valid(entry)) continue;
+              by[entry.session_id] = entry;
+            }
+            return by;
+          };
           const votes = {};
           const sessions = new Set();
-          for (const [key, entry] of Object.entries(lvData || {})) {
-            if (!entry?.lineup || key !== entry.session_id) continue;
-            sessions.add(key);
-            if (key === SESSION_ID) continue;
-            for (const pid of Object.values(entry.lineup)) {
+          const lv = lastBySession(lvData, e => e.lineup);
+          for (const sid in lv) {
+            sessions.add(sid);
+            if (sid === SESSION_ID) continue;
+            for (const pid of Object.values(lv[sid].lineup)) {
               if (pid) votes[pid] = (votes[pid] || 0) + 1;
             }
           }
           const coaches = { ...SEED_COACHES };
-          for (const [key, entry] of Object.entries(cvData || {})) {
-            if (!entry || !entry.coach_id || key !== entry.session_id) continue;
-            sessions.add(key);
-            if (key === SESSION_ID) continue;
-            coaches[entry.coach_id] = (coaches[entry.coach_id] || 0) + 1;
+          const cv = lastBySession(cvData, e => e.coach_id);
+          for (const sid in cv) {
+            sessions.add(sid);
+            if (sid === SESSION_ID) continue;
+            coaches[cv[sid].coach_id] = (coaches[cv[sid].coach_id] || 0) + 1;
           }
           const directors = {};
-          for (const [key, entry] of Object.entries(dvData || {})) {
-            if (!entry || !entry.director_id || key !== entry.session_id) continue;
-            sessions.add(key);
-            if (key === SESSION_ID) continue;
-            directors[entry.director_id] = (directors[entry.director_id] || 0) + 1;
+          const dv = lastBySession(dvData, e => e.director_id);
+          for (const sid in dv) {
+            sessions.add(sid);
+            if (sid === SESSION_ID) continue;
+            directors[dv[sid].director_id] = (directors[dv[sid].director_id] || 0) + 1;
           }
           setServerState({ votes, coaches, directors, contributors: BASE_CONTRIB + sessions.size });
           setApiReady(true);
@@ -267,7 +277,7 @@ function App(){
     postDirectorVote(id);
   };
 
-  const onVoteLineup = () => {
+  const submitLineup = (silent) => {
     const coachId = myCoach || communityCoach;
     const formation = M.FORMATIONS[coachId];
     // Submit the XI exactly as the pitch shows it: explicit picks + auto-filled slots
@@ -275,27 +285,46 @@ function App(){
     const lineup = {};
     for (const s of formation.slots) { if (xi[s.id]) lineup[s.id] = xi[s.id].id; }
     if (Object.keys(lineup).length < formation.slots.length) {
-      flash("Fill all " + formation.slots.length + " positions first", true); return;
+      if (!silent) flash("Fill all " + formation.slots.length + " positions first", true);
+      return;
     }
-    if (budget < 0) { flash("Fix your squad budget before voting", true); return; }
+    if (budget < 0) { if (!silent) flash("Fix your squad budget before voting", true); return; }
     if (!FB_READY) return;
+    const submitted = new Set(Object.values(lineup).filter(Boolean));
+    // skip redundant auto-syncs when the vote already matches
+    if (silent && submitted.size === myVotes.size && [...submitted].every(id => myVotes.has(id))) return;
     fetch(`${FB_URL}/lineup_votes/${SESSION_ID}.json`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: SESSION_ID, coach_id: coachId, lineup }),
     }).then(r => {
       if (r.ok) {
-        const submitted = new Set(Object.values(lineup).filter(Boolean));
         const firstVote = myVotes.size === 0;
         setMyVotes(submitted);
         markContributed();
-        flash(firstVote ? "Your XI is in the vote! ✓" : "Your vote has been updated ✓");
+        if (!silent) flash(firstVote ? "Your XI is in the vote! ✓" : "Your vote has been updated ✓");
         if (firstVote) {
           setServerState(prev => ({ ...prev, contributors: prev.contributors + 1 }));
         }
       }
     }).catch(() => {});
   };
+  const onVoteLineup = () => submitLineup(false);
+
+  /* Building a team IS voting: once the user has customized anything (coach,
+     lineup, transfers), keep their submitted XI in sync automatically. */
+  const submitRef = React.useRef(null);
+  submitRef.current = submitLineup;
+  uE(() => {
+    if (sharedView) return; // just looking at someone else's squad ≠ voting for it
+    const customized = myCoach != null
+      || Object.keys(myLineup).length > 0
+      || ownedIds.length !== SQUAD_IDS.length
+      || ownedIds.some((id, i) => id !== SQUAD_IDS[i]);
+    if (!customized && myVotes.size === 0) return;
+    const t = setTimeout(() => submitRef.current(true), 1200);
+    return () => clearTimeout(t);
+  }, [ownedIds, myLineup, myCoach, budget, sharedView]);
 
   const onBuy = (p) => {
     if (/origi/i.test(p.name)){
