@@ -270,9 +270,11 @@ function App(){
   const onVoteLineup = () => {
     const coachId = myCoach || communityCoach;
     const formation = M.FORMATIONS[coachId];
-    const lineup = myLineup[coachId] || {};
-    const filled = formation.slots.filter(s => lineup[s.id]).length;
-    if (filled < formation.slots.length) {
+    // Submit the XI exactly as the pitch shows it: explicit picks + auto-filled slots
+    const xi = computeXIOverride(formation, owned, votesOf, myLineup[coachId] || {});
+    const lineup = {};
+    for (const s of formation.slots) { if (xi[s.id]) lineup[s.id] = xi[s.id].id; }
+    if (Object.keys(lineup).length < formation.slots.length) {
       flash("Fill all " + formation.slots.length + " positions first", true); return;
     }
     if (budget < 0) { flash("Fix your squad budget before voting", true); return; }
