@@ -154,7 +154,7 @@
     ["Justin Kluivert","NED",26,"WF",24,"Bournemouth"],
     ["Marcus Tavernier","ENG",27,"WF",18,"Bournemouth"],
     ["Antoine Semenyo","GHA",26,"WF",45,"Bournemouth"],
-    ["Milos Kerkez","HUN",22,"LB",40,"Bournemouth","prospect"],
+    ["Milos Kerkez","HUN",22,"LB",45,"Liverpool","prospect"],
     ["Illia Zabarnyi","UKR",23,"CB",40,"Bournemouth","prospect"],
     ["Pervis Estupiñán","ECU",28,"LB",24,"Brighton"],
     ["Jan Paul van Hecke","NED",25,"CB",30,"Brighton"],

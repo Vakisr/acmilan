@@ -172,7 +172,7 @@
     // -- Midfielders
     P({ name: "Youssouf Fofana", short: "Fofana", num: 29, nat: "FRA", age: 27, pos: "MF", roles: ["DM", "LCM", "RCM", "CM"], value: 25, votes: 6600 }),
     P({ name: "Samuele Ricci", short: "Ricci", num: 4, nat: "ITA", age: 24, pos: "MF", roles: ["DM", "LCM", "RCM", "CM"], value: 28, votes: 3400, note: "Signed from Torino. The new regista." }),
-    P({ name: "Ismaël Bennacer", short: "Bennacer", num: 6, nat: "ALG", age: 28, pos: "MF", roles: ["DM", "RCM", "LCM", "CM"], value: 12, votes: 4100, note: "Back from his Marseille loan." }),
+    P({ name: "Ismaël Bennacer", short: "Bennacer", num: 6, nat: "ALG", age: 28, pos: "MF", roles: ["DM", "RCM", "LCM", "CM"], value: 2, votes: 4100, note: "Back from his Marseille loan." }),
     P({ name: "Ruben Loftus-Cheek", short: "Loftus-Cheek", num: 8, nat: "ENG", age: 30, pos: "MF", roles: ["RCM", "LCM", "CM", "DM"], value: 16, votes: 3600, note: "Injury-prone but a big-game body." }),
     P({ name: "Luka Modrić", short: "Modrić", num: 14, nat: "CRO", age: 40, pos: "MF", roles: ["LCM", "RCM", "CM"], value: 4, votes: 7800, note: "The maestro. Crowd favourite." }),
     P({ name: "Ardon Jashari", short: "Jashari", num: 19, nat: "SUI", age: 24, pos: "MF", roles: ["LCM", "RCM", "CM", "DM"], value: 28, votes: 5600 }),
@@ -271,10 +271,8 @@
   const ACADEMY = [
     P({ name: "Francesco Camarda", short: "Camarda", num: 73, nat: "ITA", age: 18, pos: "FW", roles: ["ST"], value: 12, from: "Milan Futuro", tags: ["academy"], note: "The next great No.9 hope." }),
     P({ name: "Christian Comotto", short: "Comotto", num: 70, nat: "ITA", age: 18, pos: "MF", roles: ["DM", "RCM", "LCM"], value: 6, from: "Primavera", tags: ["academy"] }),
-    P({ name: "Mattia Liberali", short: "Liberali", num: 77, nat: "ITA", age: 18, pos: "FW", roles: ["LAM", "RAM", "LW"], value: 5, from: "Primavera", tags: ["academy"] }),
     P({ name: "Hugo Cuenca", short: "Cuenca", num: 79, nat: "PAR", age: 19, pos: "FW", roles: ["LW", "LAM"], value: 4, from: "Milan Futuro", tags: ["academy"] }),
     P({ name: "Vittorio Magni", short: "Magni", num: 75, nat: "ITA", age: 19, pos: "DF", roles: ["LB", "LWB"], value: 3, from: "Milan Futuro", tags: ["academy"] }),
-    P({ name: "Andrei Coubiș", short: "Coubiș", num: 44, nat: "ROU", age: 21, pos: "DF", roles: ["CB", "RCB", "LCB"], value: 3, from: "Milan Futuro", tags: ["academy"] }),
     P({ name: "Silvano Vos", short: "Vos", num: 74, nat: "NED", age: 20, pos: "MF", roles: ["DM", "RCM", "LCM"], value: 4, from: "Milan Futuro", tags: ["academy"] }),
     P({ name: "Victor Eletu", short: "Eletu", num: 76, nat: "ITA", age: 20, pos: "MF", roles: ["DM", "RCM", "CM"], value: 3, from: "Milan Futuro", tags: ["academy"] }),
     P({ name: "Adam Bakoune", short: "Bakoune", num: 78, nat: "ITA", age: 18, pos: "DF", roles: ["RB", "RWB"], value: 3, from: "Primavera", tags: ["academy"] }),

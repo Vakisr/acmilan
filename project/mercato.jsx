@@ -143,9 +143,13 @@ function SquadView(props){
   // --- lightweight Serie A registration readout (rules baked into the squad) ---
   const listB = owned.filter(p => p.age <= 21);          // U22 → List B, outside the 25
   const listA = owned.filter(p => p.age > 21);
-  const clubTrained = listA.filter(p => p.hg === "club").length;
-  const assocTrained = listA.filter(p => p.hg === "club" || p.hg === "assoc").length;
-  const effectiveMax = Math.min(25, 17 + Math.min(clubTrained,4) + Math.min(assocTrained,4));
+  // List A max uses only over-21 homegrown (U22s are List B and exempt) …
+  const clubTrainedA = listA.filter(p => p.hg === "club").length;
+  const assocTrainedA = listA.filter(p => p.hg === "club" || p.hg === "assoc").length;
+  const effectiveMax = Math.min(25, 17 + Math.min(clubTrainedA,4) + Math.min(assocTrainedA,4));
+  // … but the counters show the whole squad, so promoted academy kids count
+  const clubTrained = owned.filter(p => p.hg === "club").length;
+  const assocTrained = owned.filter(p => p.hg === "club" || p.hg === "assoc").length;
   const nonEu = owned.filter(p => !isEu(p)).length;
   const overList = listA.length - effectiveMax;
 
