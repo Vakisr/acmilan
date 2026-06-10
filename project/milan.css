@@ -210,6 +210,45 @@ img{ display:block; }
 }
 .coach-blurb b{ color:var(--bianco); }
 
+/* sporting director selector */
+.sdblock{ margin:10px 14px 0; }
+.sd-lab{
+  font-family:var(--ff-cond); font-weight:600; font-size:11px; letter-spacing:1.4px;
+  text-transform:uppercase; color:var(--fumo-2); margin:0 2px 7px;
+}
+.sdbar{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.sdpick{
+  position:relative; overflow:hidden;
+  border:1px solid var(--linea); border-radius:13px;
+  background:var(--nero-2); padding:10px 11px; text-align:left;
+  transition:border-color .15s, background .15s; cursor:pointer;
+}
+.sdpick.on{ border-color:var(--rosso); background:#1d0e10; }
+.sdpick.on::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  box-shadow:inset 0 0 0 1px var(--rosso), inset 0 -28px 30px -24px var(--rosso);
+}
+.sdpick .role{
+  font-family:var(--ff-cond); font-size:8.5px; letter-spacing:1.6px;
+  text-transform:uppercase; color:var(--fumo-2);
+}
+.sdpick .cname{
+  font-family:var(--ff-display); font-size:16px; text-transform:uppercase;
+  line-height:.95; margin-top:2px;
+}
+.sdpick .cvotes{
+  display:flex; align-items:center; gap:5px; margin-top:7px;
+  font-family:var(--ff-cond); font-size:11px; color:var(--fumo);
+}
+.sdpick .vbar{ flex:1; height:4px; border-radius:3px; background:var(--nero-3); overflow:hidden; }
+.sdpick .vbar i{ display:block; height:100%; background:var(--rosso); }
+.sdpick.on .vbar i{ background:var(--rosso-bright); }
+.sdpick .pct{ font-family:var(--ff-display); font-size:13px; }
+@media(max-width:520px){
+  .sdpick .cname{ font-size:13px; }
+  .sdpick .role{ font-size:7.5px; letter-spacing:1px; }
+}
+
 /* the field */
 .pitch-wrap{ padding:10px 10px 6px; }
 .pitch{
@@ -654,6 +693,7 @@ img{ display:block; }
   .pview .pitch-wrap{ grid-area:pitch; padding:0; position:sticky; top:14px; }
   .pview .coachbar{ grid-area:coach; padding:0 0 8px; }
   .pview .coach-blurb{ grid-area:blurb; margin:0 0 10px; }
+  .pview .sdblock{ grid-area:sd; margin:0 0 10px; }
   .pview .contrib{ grid-area:contrib; margin:0 0 10px; }
   .pview .sharebar{ grid-area:share; margin:0 0 10px; }
   .pview .sharednote{ grid-area:note; margin:0 0 10px; }
@@ -661,6 +701,7 @@ img{ display:block; }
     grid-template-areas:
       "pitch coach"
       "pitch blurb"
+      "pitch sd"
       "pitch contrib"
       "pitch share"
       "pitch note";

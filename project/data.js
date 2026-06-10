@@ -132,6 +132,15 @@
     },
   ];
 
+  // ================================================================
+  // SPORTING DIRECTOR  (the only real choice there ever was)
+  // ================================================================
+  const DIRECTORS = [
+    { id: "maldini",   name: "Maldini",    nat: "ITA", from: "Milan legend",   role: "Sporting Director", votes: 0, blurb: "Bandiera. Won everything in red & black — the obvious choice." },
+    { id: "paolo_m",   name: "Paolo M.",   nat: "ITA", from: "Milan legend",   role: "Sporting Director", votes: 0, blurb: "A visionary eye for talent. Built the 2022 Scudetto squad on a shoestring." },
+    { id: "p_maldini", name: "P. Maldini", nat: "ITA", from: "Milan legend",   role: "Sporting Director", votes: 0, blurb: "Class on and off the pitch. The fans never wanted him to leave." },
+  ];
+
   // ---- helper to make a player -----------------------------------
   let _id = 0;
   function P(o) {
@@ -308,7 +317,7 @@
   ACADEMY.forEach(function (p) { p.hg = "club"; if (p.euEligible == null) p.euEligible = p.nat !== "ENG"; });
 
   window.MILAN = {
-    FORMATIONS, COACHES, SQUAD, MARKET, RELEGATED, ACADEMY, START_BUDGET, WAGE_CAP,
+    FORMATIONS, COACHES, DIRECTORS, SQUAD, MARKET, RELEGATED, ACADEMY, START_BUDGET, WAGE_CAP,
     // role -> human label
     ROLE_LABEL: {
       GK: "GK", LB: "LB", RB: "RB", LCB: "CB", RCB: "CB", CB: "CB",

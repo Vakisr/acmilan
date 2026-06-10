@@ -78,9 +78,11 @@ function App(){
   const [serverState, setServerState] = uS({
     votes: {},
     coaches: { ...SEED_COACHES },
+    directors: {},
     contributors: BASE_CONTRIB,
   });
   const [apiReady, setApiReady] = uS(false);
+  const [myDirector, setMyDirector] = uS(saved.myDirector || null);
 
   /* Live player index — starts with static data, enriched by players.json */
   const [liveIndex, setLiveIndex] = uS(INDEX_STATIC);
@@ -93,8 +95,9 @@ function App(){
       Promise.all([
         fetch(`${FB_URL}/lineup_votes.json`).then(r => r.ok ? r.json() : null),
         fetch(`${FB_URL}/coach_votes.json`).then(r => r.ok ? r.json() : null),
+        fetch(`${FB_URL}/director_votes.json`).then(r => r.ok ? r.json() : null),
       ])
-        .then(([lvData, cvData]) => {
+        .then(([lvData, cvData, dvData]) => {
           const votes = {};
           const sessions = new Set();
           for (const entry of Object.values(lvData || {})) {
@@ -110,7 +113,13 @@ function App(){
             coaches[entry.coach_id] = (coaches[entry.coach_id] || 0) + 1;
             sessions.add(entry.session_id);
           }
-          setServerState({ votes, coaches, contributors: BASE_CONTRIB + sessions.size });
+          const directors = {};
+          for (const entry of Object.values(dvData || {})) {
+            if (!entry || !entry.director_id) continue;
+            directors[entry.director_id] = (directors[entry.director_id] || 0) + 1;
+            sessions.add(entry.session_id);
+          }
+          setServerState({ votes, coaches, directors, contributors: BASE_CONTRIB + sessions.size });
           setApiReady(true);
         })
         .catch(() => {});
@@ -150,9 +159,9 @@ function App(){
   uE(() => {
     localStorage.setItem(STORE, JSON.stringify({
       tab, mode, ownedIds, budget, seeds, myLineup,
-      myVotes: [...myVotes], myCoach, contributed,
+      myVotes: [...myVotes], myCoach, myDirector, contributed,
     }));
-  }, [tab, mode, ownedIds, budget, seeds, myLineup, myVotes, myCoach, contributed]);
+  }, [tab, mode, ownedIds, budget, seeds, myLineup, myVotes, myCoach, myDirector, contributed]);
 
   const owned = uM(() => ownedIds.map(id => liveIndex[id]).filter(Boolean), [ownedIds, liveIndex]);
   const squadValue = owned.reduce((s,p)=> s + p.value, 0);
@@ -170,6 +179,11 @@ function App(){
   }));
   const sortedCoach = [...coaches].sort((a,b)=> b.liveVotes - a.liveVotes);
   const communityCoach = (sortedCoach.find(c => !c.ruledOut) || sortedCoach[0]).id;
+
+  const directors = M.DIRECTORS.map(d => ({
+    ...d,
+    liveVotes: (serverState.directors[d.id] ?? d.votes) + (myDirector === d.id ? VOTE_WEIGHT : 0),
+  }));
 
   const contributors = apiReady ? serverState.contributors : BASE_CONTRIB + (contributed ? 1 : 0);
 
@@ -200,6 +214,15 @@ function App(){
     }).catch(() => {});
   }
 
+  function postDirectorVote(directorId){
+    if (!FB_READY) return;
+    fetch(`${FB_URL}/director_votes.json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ director_id: directorId, session_id: SESSION_ID }),
+    }).catch(() => {});
+  }
+
   // ---- handlers ----
   const onVoteCoach = (id) => {
     setMyCoach(() => id);
@@ -207,6 +230,17 @@ function App(){
     markContributed();
     flash("Lined up in " + M.FORMATIONS[id].name);
     postCoachVote(id);
+  };
+
+  const onVoteDirector = (id) => {
+    setMyDirector(id);
+    markContributed();
+    flash("Maldini it is. Was there ever a doubt?");
+    setServerState(prev => ({
+      ...prev,
+      directors: { ...prev.directors, [id]: (prev.directors[id] || 0) + 1 },
+    }));
+    postDirectorVote(id);
   };
 
   const onVoteLineup = () => {
@@ -327,6 +361,7 @@ function App(){
           peopleSquad={M.SQUAD} mySquad={owned}
           coaches={coaches} communityCoach={communityCoach}
           myCoach={myCoach} onVoteCoach={onVoteCoach}
+          directors={directors} myDirector={myDirector} onVoteDirector={onVoteDirector}
           votesOf={votesOf} myVotes={myVotes} onVoteLineup={onVoteLineup}
           myLineup={myLineup} onStart={onStart}
           onBuy={onBuy} onPromote={onPromote} onSell={onSell} ownedIds={ownedIds} budget={budget}

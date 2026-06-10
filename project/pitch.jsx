@@ -14,6 +14,7 @@ function SubTok({ p, onClick }){
 function Pitch(props){
   const {
     mode, setMode, peopleSquad, mySquad, coaches, communityCoach, myCoach, onVoteCoach,
+    directors, myDirector, onVoteDirector,
     votesOf, myVotes, onVoteLineup, myLineup, onStart, onBuy, onPromote, onSell, ownedIds, budget,
     contributors, contributed, apiReady, onShare, sharedView, onClaimShared, goMercato, allBuy,
   } = props;
@@ -103,6 +104,35 @@ function Pitch(props){
             ? <span><b>You're coaching {curCoach.name}'s {formation.name}.</b> Tap a position to pick who starts, or sign someone new straight onto the pitch. {curCoach.blurb}</span>
             : <span><b>{curCoach.name}</b> is winning the vote — the crowd lines up in a <b>{formation.name}</b>. {curCoach.blurb}</span>}
         </div>
+
+        {/* sporting director */}
+        {directors && directors.length > 0 && (() => {
+          const totalSD = directors.reduce((s,d)=> s + d.liveVotes, 0);
+          return (
+            <div className="sdblock">
+              <div className="sd-lab">Who should be Sporting Director?</div>
+              <div className="sdbar">
+                {directors.map(d => {
+                  const pct = totalSD ? Math.round(d.liveVotes/totalSD*100) : 0;
+                  const on = d.id === myDirector;
+                  return (
+                    <button key={d.id} className={"sdpick" + (on ? " on" : "")} onClick={()=>onVoteDirector(d.id)}>
+                      <div className="role">{d.from} · {d.nat}</div>
+                      <div className="cname">{d.name}</div>
+                      <div className="cvotes">
+                        <div className="vbar"><i style={{width:pct+"%"}}/></div>
+                        <span className="pct">{pct}%</span>
+                      </div>
+                      <div className="cvotes" style={{marginTop:3}}>
+                        <span>{fmtNum(d.liveVotes)} votes</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* field */}
         <div className="pitch-wrap">
