@@ -212,10 +212,10 @@ function App(){
 
   const contributors = apiReady ? serverState.contributors : BASE_CONTRIB + (contributed ? 1 : 0);
 
-  const flash = (msg, bad) => {
+  const flash = (msg, bad, ms) => {
     setToast({ msg, bad });
     clearTimeout(toastT.current);
-    toastT.current = setTimeout(()=> setToast(null), 2000);
+    toastT.current = setTimeout(()=> setToast(null), ms || 2000);
   };
   const markContributed = () => { if (!contributed) setContributed(true); };
 
@@ -294,6 +294,10 @@ function App(){
   };
 
   const onBuy = (p) => {
+    if (/origi/i.test(p.name)){
+      flash("Are you actually serious? Go run a charity instead, Origi is not entering this house!", true, 4000);
+      return false;
+    }
     if (p.value > budget){ flash("Not enough in the war chest", true); return false; }
     if (ownedIds.includes(p.id)) return false;
     if (ownedIds.length >= 30){ flash("Squad is full (30 max)", true); return false; }
