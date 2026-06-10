@@ -8,6 +8,8 @@ const STORE = "milan-transfer-dreams-v4";
 const VOTE_WEIGHT = 1;
 const BASE_CONTRIB = 0;
 const buyHype = (p) => Math.round(p.value * 90) + 1200;
+/* money arithmetic at 1-decimal precision — repeated +/- of values like 0.9 otherwise accumulates float noise (€27.900000000000006M) */
+const r1 = (v) => Math.round(v * 10) / 10;
 
 /* Firebase Realtime Database — paste your database URL from the Firebase console */
 const FB_URL = "https://acmilan-c402b-default-rtdb.europe-west1.firebasedatabase.app";
@@ -66,7 +68,7 @@ function App(){
   const [mode, setMode] = uS(shared ? "mine" : (saved.mode || "people"));
   const [sharedView, setSharedView] = uS(!!shared);
   const [ownedIds, setOwnedIds] = uS(init.ownedIds || init.o || SQUAD_IDS.slice());
-  const [budget, setBudget] = uS(shared ? M.START_BUDGET : (saved.budget != null ? saved.budget : M.START_BUDGET));
+  const [budget, setBudget] = uS(shared ? M.START_BUDGET : (saved.budget != null ? r1(saved.budget) : M.START_BUDGET));
   const [seeds, setSeeds] = uS(init.seeds || init.s || {});
   const [myLineup, setMyLineup] = uS(init.myLineup || init.l || {});
   const [myCoach, setMyCoach] = uS(init.myCoach || init.c || (saved.myCoach || null));
@@ -170,7 +172,7 @@ function App(){
   }, [tab, mode, ownedIds, budget, seeds, myLineup, myVotes, myCoach, myDirector, contributed]);
 
   const owned = uM(() => ownedIds.map(id => liveIndex[id]).filter(Boolean), [ownedIds, liveIndex]);
-  const squadValue = owned.reduce((s,p)=> s + p.value, 0);
+  const squadValue = r1(owned.reduce((s,p)=> s + p.value, 0));
 
   /* votesOf: Firebase count is source of truth once live; seeds (buy hype) override locally */
   // My XI ranking: local buy-hype wins so signings slot in; otherwise live aggregate votes
@@ -301,7 +303,7 @@ function App(){
     if (p.value > budget){ flash("Not enough in the war chest", true); return false; }
     if (ownedIds.includes(p.id)) return false;
     if (ownedIds.length >= 30){ flash("Squad is full (30 max)", true); return false; }
-    setBudget(b => b - p.value);
+    setBudget(b => r1(b - p.value));
     setSeeds(s => ({ ...s, [p.id]: buyHype(p) }));
     setOwnedIds(ids => [...ids, p.id]);
     const wf = wageFlash(p);
@@ -319,7 +321,7 @@ function App(){
     return true;
   };
   const onSell = (p) => {
-    setBudget(b => b + p.value);
+    setBudget(b => r1(b + p.value));
     setOwnedIds(ids => ids.filter(id => id !== p.id));
     setMyLineup(ml => {
       const n = {};
