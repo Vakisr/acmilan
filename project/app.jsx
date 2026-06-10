@@ -98,26 +98,32 @@ function App(){
         fetch(`${FB_URL}/director_votes.json`).then(r => r.ok ? r.json() : null),
       ])
         .then(([lvData, cvData, dvData]) => {
+          /* Entries are keyed by session id (PUT), so each user counts once.
+             Own entries are skipped — local state (myVotes/myCoach/myDirector)
+             supplies them, so switching a pick never double-counts. */
           const votes = {};
           const sessions = new Set();
-          for (const entry of Object.values(lvData || {})) {
-            if (!entry?.lineup) continue;
-            sessions.add(entry.session_id);
+          for (const [key, entry] of Object.entries(lvData || {})) {
+            if (!entry?.lineup || key !== entry.session_id) continue;
+            sessions.add(key);
+            if (key === SESSION_ID) continue;
             for (const pid of Object.values(entry.lineup)) {
               if (pid) votes[pid] = (votes[pid] || 0) + 1;
             }
           }
           const coaches = { ...SEED_COACHES };
-          for (const entry of Object.values(cvData || {})) {
-            if (!entry || !entry.coach_id) continue;
+          for (const [key, entry] of Object.entries(cvData || {})) {
+            if (!entry || !entry.coach_id || key !== entry.session_id) continue;
+            sessions.add(key);
+            if (key === SESSION_ID) continue;
             coaches[entry.coach_id] = (coaches[entry.coach_id] || 0) + 1;
-            sessions.add(entry.session_id);
           }
           const directors = {};
-          for (const entry of Object.values(dvData || {})) {
-            if (!entry || !entry.director_id) continue;
+          for (const [key, entry] of Object.entries(dvData || {})) {
+            if (!entry || !entry.director_id || key !== entry.session_id) continue;
+            sessions.add(key);
+            if (key === SESSION_ID) continue;
             directors[entry.director_id] = (directors[entry.director_id] || 0) + 1;
-            sessions.add(entry.session_id);
           }
           setServerState({ votes, coaches, directors, contributors: BASE_CONTRIB + sessions.size });
           setApiReady(true);
@@ -174,11 +180,11 @@ function App(){
     return server != null ? server : (apiReady ? 0 : p.votes);
   }, [seeds, serverState, apiReady]);
 
-  // People's XI: pure aggregated lineup votes — no personal buy-hype
+  // People's XI: aggregated lineup votes (others) + my own submitted lineup
   const peopleVotesOf = uC((p) => {
-    const server = serverState.votes[p.id];
-    return server != null ? server : (apiReady ? 0 : p.votes);
-  }, [serverState, apiReady]);
+    if (!apiReady) return p.votes;
+    return (serverState.votes[p.id] || 0) + (myVotes.has(p.id) ? VOTE_WEIGHT : 0);
+  }, [serverState, apiReady, myVotes]);
 
   // People's XI candidate pool = squad + anyone who's received lineup votes (incl. signings)
   const peopleSquad = uM(() => {
@@ -186,8 +192,11 @@ function App(){
     for (const id in serverState.votes) {
       if (!map.has(id) && liveIndex[id]) map.set(id, liveIndex[id]);
     }
+    for (const id of myVotes) {
+      if (!map.has(id) && liveIndex[id]) map.set(id, liveIndex[id]);
+    }
     return [...map.values()];
-  }, [serverState.votes, liveIndex]);
+  }, [serverState.votes, liveIndex, myVotes]);
 
   const coaches = M.COACHES.map(c => ({
     ...c,
@@ -221,10 +230,11 @@ function App(){
     return { msg: " · €" + wageOf(p) + "M/yr wages", bad: false };
   };
 
+  /* One vote per session — PUT to a session-keyed path replaces any previous vote */
   function postCoachVote(coachId){
     if (!FB_READY) return;
-    fetch(`${FB_URL}/coach_votes.json`, {
-      method: "POST",
+    fetch(`${FB_URL}/coach_votes/${SESSION_ID}.json`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ coach_id: coachId, session_id: SESSION_ID }),
     }).catch(() => {});
@@ -232,8 +242,8 @@ function App(){
 
   function postDirectorVote(directorId){
     if (!FB_READY) return;
-    fetch(`${FB_URL}/director_votes.json`, {
-      method: "POST",
+    fetch(`${FB_URL}/director_votes/${SESSION_ID}.json`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ director_id: directorId, session_id: SESSION_ID }),
     }).catch(() => {});
@@ -252,10 +262,6 @@ function App(){
     setMyDirector(id);
     markContributed();
     flash("Maldini it is. Was there ever a doubt?");
-    setServerState(prev => ({
-      ...prev,
-      directors: { ...prev.directors, [id]: (prev.directors[id] || 0) + 1 },
-    }));
     postDirectorVote(id);
   };
 
@@ -269,21 +275,20 @@ function App(){
     }
     if (budget < 0) { flash("Fix your squad budget before voting", true); return; }
     if (!FB_READY) return;
-    fetch(`${FB_URL}/lineup_votes.json`, {
-      method: "POST",
+    fetch(`${FB_URL}/lineup_votes/${SESSION_ID}.json`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: SESSION_ID, coach_id: coachId, lineup }),
     }).then(r => {
       if (r.ok) {
         const submitted = new Set(Object.values(lineup).filter(Boolean));
+        const firstVote = myVotes.size === 0;
         setMyVotes(submitted);
         markContributed();
-        flash("Your XI is in the vote! ✓");
-        setServerState(prev => {
-          const newVotes = { ...prev.votes };
-          for (const pid of submitted) newVotes[pid] = (newVotes[pid] || 0) + 1;
-          return { ...prev, votes: newVotes, contributors: prev.contributors + 1 };
-        });
+        flash(firstVote ? "Your XI is in the vote! ✓" : "Your vote has been updated ✓");
+        if (firstVote) {
+          setServerState(prev => ({ ...prev, contributors: prev.contributors + 1 }));
+        }
       }
     }).catch(() => {});
   };
